@@ -15,7 +15,7 @@ struct HabitCardView: View {
     
     var body: some View {
         HStack {
-            // 左側資訊區：點擊或長按此處可觸發選單
+            // 左側資訊區：長按此處會彈出選單
             VStack(alignment: .leading, spacing: 8) {
                 Text(habitName)
                     .font(.title2)
@@ -30,17 +30,19 @@ struct HabitCardView: View {
                         .foregroundColor(.gray)
                 }
             }
+            .contentShape(Rectangle()) // 確保文字間隙也能觸發選單
             
             Spacer()
             
-            // 右側充電按鈕：獨立綁定 DragGesture，不與卡片的 contextMenu 衝突
+            // 右側充電按鈕：透過高優先權手勢完全阻斷外層的 contextMenu
             ProgressCircleView(
                 chargeProgress: chargeProgress,
                 isLongPressing: isLongPressing
             )
             .scaleEffect(isLongPressing ? 1.15 : 1.0)
             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isLongPressing)
-            .gesture(
+            // 使用高優先權的長按與拖動組合，徹底把 contextMenu 擋在外面
+            .highPriorityGesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { _ in
                         if !isLongPressing {
@@ -53,14 +55,31 @@ struct HabitCardView: View {
                         endCharging()
                     }
             )
+            // 加上空點擊，防止長按穿透到後方的卡片背景上
+            .onTapGesture {} 
         }
         .padding()
+        // 液態玻璃質感背景
         .background(
-            RoundedRectangle(cornerRadius: 24)
-                .fill(Color.white.opacity(0.05))
-                .background(RoundedRectangle(cornerRadius: 24).stroke(Color.white.opacity(0.1), lineWidth: 1))
+            ZStack {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(Color.white.opacity(0.02))
+            }
         )
-        // 將右鍵選單加回卡片主體，現在它與右側按鈕的手勢分離了
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [.white.opacity(0.2), .white.opacity(0.05)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
+        // 卡片主體的選單（現在按鈕長按不會再誤觸它了）
         .contextMenu {
             Button(role: .destructive) {
                 showDeleteConfirm = true
@@ -139,8 +158,7 @@ private struct ProgressCircleView: View {
             LiquidIcon(progress: chargeProgress, isCharging: isLongPressing)
                 .frame(width: 30, height: 30)
         }
-        // 確保圓圈按鈕內部的元件不會攔截或干擾手勢
-        .allowsHitTesting(false)
+        .contentShape(Circle()) // 確保圓形範圍內的事件都被精準捕捉
     }
 }
 
