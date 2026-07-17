@@ -29,7 +29,6 @@ struct HabitCardView: View {
             
             Spacer()
             
-            // 抽離成獨立的 ProgressCircleView
             ProgressCircleView(
                 chargeProgress: chargeProgress,
                 isLongPressing: isLongPressing
@@ -63,7 +62,8 @@ struct HabitCardView: View {
                 Label("刪除習慣", systemName: "trash")
             }
         }
-        .alert("刪除習慣", isPresented: &showDeleteConfirm) {
+        // 修正這裡的 Binding 語法錯誤：移除 &，正確使用 $showDeleteConfirm
+        .alert("刪除習慣", isPresented: $showDeleteConfirm) {
             Button("取消", role: .cancel) {}
             Button("刪除", role: .destructive) { delete() }
         } message: {
@@ -107,7 +107,6 @@ struct HabitCardView: View {
     }
 }
 
-// 獨立出來的圓圈視圖，避免全放在一個 body 裡造成編譯器過載
 private struct ProgressCircleView: View {
     let chargeProgress: Double
     let isLongPressing: Bool
