@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct HabitCardView: View {
-    // 將原本的 Habit 拆解為基礎型別，徹底解決類型找不到的編譯錯誤
     let habitName: String
     let habitStreak: Int
     let habitProgress: Double
@@ -16,6 +15,7 @@ struct HabitCardView: View {
     
     var body: some View {
         HStack {
+            // 左側資訊區：點擊或長按此處可觸發選單
             VStack(alignment: .leading, spacing: 8) {
                 Text(habitName)
                     .font(.title2)
@@ -33,6 +33,7 @@ struct HabitCardView: View {
             
             Spacer()
             
+            // 右側充電按鈕：獨立綁定 DragGesture，不與卡片的 contextMenu 衝突
             ProgressCircleView(
                 chargeProgress: chargeProgress,
                 isLongPressing: isLongPressing
@@ -59,12 +60,12 @@ struct HabitCardView: View {
                 .fill(Color.white.opacity(0.05))
                 .background(RoundedRectangle(cornerRadius: 24).stroke(Color.white.opacity(0.1), lineWidth: 1))
         )
-        // 使用 swipeActions 取代 contextMenu，解決長按手勢衝突問題
-        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+        // 將右鍵選單加回卡片主體，現在它與右側按鈕的手勢分離了
+        .contextMenu {
             Button(role: .destructive) {
                 showDeleteConfirm = true
             } label: {
-                Label("刪除", systemImage: "trash")
+                Label("刪除習慣", systemImage: "trash")
             }
         }
         .alert("刪除習慣", isPresented: $showDeleteConfirm) {
@@ -138,6 +139,8 @@ private struct ProgressCircleView: View {
             LiquidIcon(progress: chargeProgress, isCharging: isLongPressing)
                 .frame(width: 30, height: 30)
         }
+        // 確保圓圈按鈕內部的元件不會攔截或干擾手勢
+        .allowsHitTesting(false)
     }
 }
 
