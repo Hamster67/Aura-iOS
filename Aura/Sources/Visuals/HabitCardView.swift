@@ -29,40 +29,22 @@ struct HabitCardView: View {
             
             Spacer()
             
-            // 互動能量圈圈
-            ZStack {
-                Circle()
-                    .stroke(Color.white.opacity(0.15), lineWidth: 4)
-                    .frame(width: 60, height: 60)
-                
-                Circle()
-                    .trim(from: 0, to: chargeProgress)
-                    .stroke(
-                        LinearGradient(
-                            colors: [Color.blue, Color.purple],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        style: StrokeStyle(lineWidth: 4, lineCap: .round)
-                    )
-                    .frame(width: 60, height: 60)
-                    .rotationEffect(.degrees(-90))
-                    .animation(.linear(duration: 0.1), value: chargeProgress)
-                
-                LiquidIcon(progress: chargeProgress, isCharging: isLongPressing)
-                    .frame(width: 30, height: 30)
-            }
+            // 抽離成獨立的 ProgressCircleView
+            ProgressCircleView(
+                chargeProgress: chargeProgress,
+                isLongPressing: isLongPressing
+            )
             .scaleEffect(isLongPressing ? 1.15 : 1.0)
             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isLongPressing)
             .gesture(
                 DragGesture(minimumDistance: 0)
-                    .onChanged { (_: DragGesture.Value) in
+                    .onChanged { _ in
                         if !isLongPressing {
                             isLongPressing = true
                             beginCharging()
                         }
                     }
-                    .onEnded { (_: DragGesture.Value) in
+                    .onEnded { _ in
                         isLongPressing = false
                         endCharging()
                     }
@@ -95,7 +77,6 @@ struct HabitCardView: View {
         
         timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
             if chargeProgress < 1.0 {
-                // 每次增加進度，直到全滿 100% (1.0)
                 chargeProgress = min(chargeProgress + 0.02, 1.0)
                 onChargeUpdate(habit, chargeProgress, true)
                 
@@ -112,7 +93,6 @@ struct HabitCardView: View {
         timer = nil
         isLongPressing = false
         
-        // 如果沒蓄滿到 1.0，則平滑回彈回原本的習慣進度
         if chargeProgress < 1.0 {
             withAnimation(.easeOut(duration: 0.3)) {
                 chargeProgress = habit.progress
@@ -124,6 +104,37 @@ struct HabitCardView: View {
     private func triggerSuccessVibration() {
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
+    }
+}
+
+// 獨立出來的圓圈視圖，避免全放在一個 body 裡造成編譯器過載
+private struct ProgressCircleView: View {
+    let chargeProgress: Double
+    let isLongPressing: Bool
+    
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(Color.white.opacity(0.15), lineWidth: 4)
+                .frame(width: 60, height: 60)
+            
+            Circle()
+                .trim(from: 0, to: chargeProgress)
+                .stroke(
+                    LinearGradient(
+                        colors: [.blue, .purple],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                )
+                .frame(width: 60, height: 60)
+                .rotationEffect(.degrees(-90))
+                .animation(.linear(duration: 0.1), value: chargeProgress)
+            
+            LiquidIcon(progress: chargeProgress, isCharging: isLongPressing)
+                .frame(width: 30, height: 30)
+        }
     }
 }
 
