@@ -20,9 +20,26 @@ struct ContentView: View {
                     .padding(.top, 64).padding(.bottom, 8)
 
                     ForEach(habits) { habit in
-                        HabitCardView(habit: habit, delete: { modelContext.delete(habit) }) { habit, progress, isCharging in
-                            AuraActivityController.shared.update(habitName: habit.title, progress: progress, neonColorHex: habit.colorHex, isCharging: isCharging)
-                        }
+                        HabitCardView(
+                            habitName: habit.title,
+                            habitStreak: habit.streak,
+                            habitProgress: habit.progress,
+                            delete: { 
+                                modelContext.delete(habit) 
+                            },
+                            onChargeUpdate: { progress, isCharging in
+                                // 更新資料庫模型狀態
+                                habit.progress = progress
+                                
+                                // 同步更新即時動態 (Live Activity)
+                                AuraActivityController.shared.update(
+                                    habitName: habit.title, 
+                                    progress: progress, 
+                                    neonColorHex: habit.colorHex, 
+                                    isCharging: isCharging
+                                )
+                            }
+                        )
                     }
 
                     if habits.count < 5 {
