@@ -30,9 +30,11 @@ jobs:
         run: |
           APP_PATH="$DERIVED_DATA_PATH/Build/Products/Release-iphoneos/Aura.app"
           test -d "$APP_PATH"
+          EXECUTABLE_NAME=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP_PATH/Info.plist")
+          test -f "$APP_PATH/$EXECUTABLE_NAME"
           mkdir -p build/unsigned/Payload
           cp -R "$APP_PATH" build/unsigned/Payload/Aura.app
-          ditto -c -k --sequesterRsrc --keepParent build/unsigned/Payload build/Aura-unsigned.ipa
+          (cd build/unsigned && zip -qry ../Aura-unsigned.ipa Payload)
       - name: Install distribution certificate and provisioning profile
         if: env.HAS_SIGNING == 'true' && github.event_name != 'pull_request'
         env:
