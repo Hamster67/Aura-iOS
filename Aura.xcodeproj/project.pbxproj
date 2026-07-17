@@ -1,0 +1,107 @@
+// !$*UTF8*$!
+{
+ archiveVersion = 1;
+ classes = {};
+ objectVersion = 56;
+ objects = {
+/* Begin PBXBuildFile section */
+ A001 /* AuraApp.swift */ = {isa = PBXBuildFile; fileRef = F001; };
+ A002 = {isa = PBXBuildFile; fileRef = F002; };
+ A003 = {isa = PBXBuildFile; fileRef = F003; };
+ A004 = {isa = PBXBuildFile; fileRef = F004; };
+ A005 = {isa = PBXBuildFile; fileRef = F005; };
+ A006 = {isa = PBXBuildFile; fileRef = F006; };
+ A007 = {isa = PBXBuildFile; fileRef = F007; };
+ A008 = {isa = PBXBuildFile; fileRef = F008; };
+ A009 = {isa = PBXBuildFile; fileRef = F009; };
+ A010 = {isa = PBXBuildFile; fileRef = F010; };
+ A011 = {isa = PBXBuildFile; fileRef = F011; };
+ A012 = {isa = PBXBuildFile; fileRef = F012; };
+ A013 = {isa = PBXBuildFile; fileRef = F013; };
+ W001 = {isa = PBXBuildFile; fileRef = WF001; };
+ W002 = {isa = PBXBuildFile; fileRef = WF002; };
+ W003 = {isa = PBXBuildFile; fileRef = WF003; };
+ W004 = {isa = PBXBuildFile; fileRef = F010; };
+ E001 = {isa = PBXBuildFile; fileRef = P002; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+/* Begin PBXFileReference section */
+ F001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuraApp.swift; sourceTree = "<group>"; };
+ F002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+ F003 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitModel.swift; sourceTree = "<group>"; };
+ F004 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedContainer.swift; sourceTree = "<group>"; };
+ F005 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Aura.swift"; sourceTree = "<group>"; };
+ F006 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidCanvasView.swift; sourceTree = "<group>"; };
+ F007 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlurredBackgroundView.swift; sourceTree = "<group>"; };
+ F008 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitCardView.swift; sourceTree = "<group>"; };
+ F009 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomHabitSheet.swift; sourceTree = "<group>"; };
+ F010 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuraActivityAttributes.swift; sourceTree = "<group>"; };
+ F011 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuraActivityController.swift; sourceTree = "<group>"; };
+ F012 = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = RippleShader.metal; sourceTree = "<group>"; };
+ F013 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidIconPainter.swift; sourceTree = "<group>"; };
+ I001 = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+ EN001 = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Aura.entitlements; sourceTree = "<group>"; };
+ WF001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuraWidgetsBundle.swift; sourceTree = "<group>"; };
+ WF002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuraProgressWidget.swift; sourceTree = "<group>"; };
+ WF003 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuraWidgetLiveActivity.swift; sourceTree = "<group>"; };
+ WI001 = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+ WEN01 = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AuraWidgets.entitlements; sourceTree = "<group>"; };
+ P001 = {isa = PBXFileReference; explicitFileType = wrapper.application; path = Aura.app; sourceTree = BUILT_PRODUCTS_DIR; };
+ P002 = {isa = PBXFileReference; explicitFileType = wrapper.app-extension; path = AuraWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+/* Begin PBXGroup section */
+ G000 = {isa = PBXGroup; children = (G001, G014, G002, G003,); sourceTree = "<group>"; };
+ G001 = {isa = PBXGroup; path = Aura; sourceTree = "<group>"; children = (G010, G011, G012, I001, EN001,); };
+ G010 = {isa = PBXGroup; path = Sources; sourceTree = "<group>"; children = (G101, G102, G103, G104, G105, G013,); };
+ G101 = {isa = PBXGroup; path = App; sourceTree = "<group>"; children = (F001,F002,); };
+ G102 = {isa = PBXGroup; path = Model; sourceTree = "<group>"; children = (F003,F004,); };
+ G103 = {isa = PBXGroup; path = Support; sourceTree = "<group>"; children = (F005,); };
+ G104 = {isa = PBXGroup; path = Visuals; sourceTree = "<group>"; children = (F006,F007,F008,F013,); };
+ G105 = {isa = PBXGroup; path = Views; sourceTree = "<group>"; children = (F009,); };
+ G011 = {isa = PBXGroup; path = Shared; sourceTree = "<group>"; children = (F010,); };
+ G012 = {isa = PBXGroup; path = Shaders; sourceTree = "<group>"; children = (F012,); };
+ G013 = {isa = PBXGroup; path = Services; sourceTree = "<group>"; children = (F011,); };
+ G106 = {isa = PBXGroup; path = Services; sourceTree = "<group>"; children = (F011,); };
+ G014 = {isa = PBXGroup; path = AuraWidgets; sourceTree = "<group>"; children = (WF001,WF002,WF003,WI001,WEN01,); };
+ G002 = {isa = PBXGroup; name = Products; sourceTree = "<group>"; children = (P001,P002,); };
+ G003 = {isa = PBXGroup; name = Frameworks; sourceTree = "<group>"; children = (); };
+/* End PBXGroup section */
+/* Begin PBXNativeTarget section */
+ T001 = {isa = PBXNativeTarget; buildConfigurationList = C001; buildPhases = (B001,B002,B003,); buildRules = (); dependencies = (D001,); name = Aura; productName = Aura; productReference = P001; productType = "com.apple.product-type.application"; };
+ T002 = {isa = PBXNativeTarget; buildConfigurationList = C002; buildPhases = (B101,B102,); buildRules = (); dependencies = (); name = AuraWidgets; productName = AuraWidgets; productReference = P002; productType = "com.apple.product-type.app-extension"; };
+/* End PBXNativeTarget section */
+/* Begin PBXProject section */
+ PRJ = {isa = PBXProject; attributes = {LastUpgradeCheck = 1540; TargetAttributes = {T002 = {CreatedOnToolsVersion = 15.4;};};}; buildConfigurationList = C000; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base,); mainGroup = G000; productRefGroup = G002; projectDirPath = ""; projectRoot = ""; targets = (T001,T002,); };
+/* End PBXProject section */
+/* Begin PBXResourcesBuildPhase section */
+ B002 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+ B102 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+/* Begin PBXSourcesBuildPhase section */
+ B001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A001,A002,A003,A004,A005,A006,A007,A008,A009,A010,A011,A012,A013,); runOnlyForDeploymentPostprocessing = 0; };
+ B101 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (W001,W002,W003,W004,); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+/* Begin PBXCopyFilesBuildPhase section */
+ B003 = {isa = PBXCopyFilesBuildPhase; buildActionMask = 2147483647; dstPath = ""; dstSubfolderSpec = 13; files = (E001,); name = "Embed Foundation Extensions"; runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXCopyFilesBuildPhase section */
+/* Begin PBXTargetDependency section */
+ D001 = {isa = PBXTargetDependency; target = T002; targetProxy = X001; };
+/* End PBXTargetDependency section */
+/* Begin PBXContainerItemProxy section */
+ X001 = {isa = PBXContainerItemProxy; containerPortal = PRJ; proxyType = 1; remoteGlobalIDString = T002; remoteInfo = AuraWidgets; };
+/* End PBXContainerItemProxy section */
+/* Begin XCBuildConfiguration section */
+ CAppDebug = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_ENTITLEMENTS = Aura/Aura.entitlements; CODE_SIGN_STYLE = Automatic; DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)"; INFOPLIST_FILE = Aura/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.aura.liquidglass; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2";}; name = Debug;};
+ CAppRelease = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_ENTITLEMENTS = Aura/Aura.entitlements; CODE_SIGN_STYLE = Automatic; DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)"; INFOPLIST_FILE = Aura/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.aura.liquidglass; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2";}; name = Release;};
+ CWDebug = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_ENTITLEMENTS = AuraWidgets/AuraWidgets.entitlements; CODE_SIGN_STYLE = Automatic; DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)"; INFOPLIST_FILE = AuraWidgets/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.aura.liquidglass.widgets; SKIP_INSTALL = YES; SWIFT_VERSION = 5.0;}; name = Debug;};
+ CWRelease = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_ENTITLEMENTS = AuraWidgets/AuraWidgets.entitlements; CODE_SIGN_STYLE = Automatic; DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)"; INFOPLIST_FILE = AuraWidgets/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.aura.liquidglass.widgets; SKIP_INSTALL = YES; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_VERSION = 5.0;}; name = Release;};
+ CPDebug = {isa = XCBuildConfiguration; buildSettings = {CLANG_CXX_LANGUAGE_STANDARD = "gnu++20"; CLANG_ENABLE_MODULES = YES; SWIFT_VERSION = 5.0;}; name = Debug;};
+ CPRelease = {isa = XCBuildConfiguration; buildSettings = {CLANG_CXX_LANGUAGE_STANDARD = "gnu++20"; CLANG_ENABLE_MODULES = YES; SWIFT_VERSION = 5.0;}; name = Release;};
+/* End XCBuildConfiguration section */
+/* Begin XCConfigurationList section */
+ C000 = {isa = XCConfigurationList; buildConfigurations = (CPDebug,CPRelease,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;};
+ C001 = {isa = XCConfigurationList; buildConfigurations = (CAppDebug,CAppRelease,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;};
+ C002 = {isa = XCConfigurationList; buildConfigurations = (CWDebug,CWRelease,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;};
+/* End XCConfigurationList section */
+ };
+ rootObject = PRJ;
+}

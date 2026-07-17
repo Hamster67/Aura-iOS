@@ -1,0 +1,65 @@
+name: Aura iOS Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-export:
+    runs-on: macos-14
+    env:
+      PROJECT: Aura.xcodeproj
+      SCHEME: Aura
+      ARCHIVE_PATH: ${{ github.workspace }}/build/Aura.xcarchive
+      EXPORT_PATH: ${{ github.workspace }}/build/export
+      TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+      HAS_SIGNING: ${{ secrets.BUILD_CERTIFICATE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode 15
+        run: sudo xcode-select --switch /Applications/Xcode_15.4.app
+      - name: Verify unsigned Release build
+        run: >-
+          xcodebuild clean build -project "$PROJECT" -scheme "$SCHEME"
+          -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO
+          CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+      - name: Install distribution certificate and provisioning profile
+        if: env.HAS_SIGNING == 'true' && github.event_name != 'pull_request'
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          PROFILE_BASE64: ${{ secrets.PROVISIONING_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/aura-signing.keychain-db"
+          CERTIFICATE_PATH="$RUNNER_TEMP/distribution.p12"
+          PROFILE_PATH="$RUNNER_TEMP/aura.mobileprovision"
+          echo -n "$CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
+          echo -n "$PROFILE_BASE64" | base64 --decode -o "$PROFILE_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/"
+      - name: Archive signed app
+        if: env.HAS_SIGNING == 'true' && github.event_name != 'pull_request'
+        run: >-
+          xcodebuild clean archive -project "$PROJECT" -scheme "$SCHEME"
+          -configuration Release -archivePath "$ARCHIVE_PATH" DEVELOPMENT_TEAM="$TEAM_ID"
+      - name: Export IPA
+        if: env.HAS_SIGNING == 'true' && github.event_name != 'pull_request'
+        run: >-
+          xcodebuild -exportArchive -archivePath "$ARCHIVE_PATH"
+          -exportOptionsPlist exportOptions.plist -exportPath "$EXPORT_PATH"
+      - name: Publish build artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aura-${{ github.run_number }}
+          path: build
+          if-no-files-found: warn
+          retention-days: 14
