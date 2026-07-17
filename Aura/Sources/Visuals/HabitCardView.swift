@@ -1,9 +1,13 @@
 import SwiftUI
 
 struct HabitCardView: View {
-    let habit: Habit
+    // 將原本的 Habit 拆解為基礎型別，徹底解決類型找不到的編譯錯誤
+    let habitName: String
+    let habitStreak: Int
+    let habitProgress: Double
+    
     var delete: () -> Void
-    var onChargeUpdate: (Habit, Double, Bool) -> Void
+    var onChargeUpdate: (Double, Bool) -> Void
     
     @State private var isLongPressing = false
     @State private var chargeProgress: Double = 0.0
@@ -13,7 +17,7 @@ struct HabitCardView: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 8) {
-                Text(habit.name)
+                Text(habitName)
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(.white)
@@ -21,7 +25,7 @@ struct HabitCardView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "flame.fill")
                         .foregroundColor(.orange)
-                    Text("\(habit.streak) 天連續")
+                    Text("\(habitStreak) 天連續")
                         .font(.subheadline)
                         .foregroundColor(.gray)
                 }
@@ -62,23 +66,22 @@ struct HabitCardView: View {
                 Label("刪除習慣", systemName: "trash")
             }
         }
-        // 修正這裡的 Binding 語法錯誤：移除 &，正確使用 $showDeleteConfirm
         .alert("刪除習慣", isPresented: $showDeleteConfirm) {
             Button("取消", role: .cancel) {}
             Button("刪除", role: .destructive) { delete() }
         } message: {
-            Text("確定要刪除「\(habit.name)」嗎？此動作無法復原。")
+            Text("確定要刪除「\(habitName)」嗎？此動作無法復原。")
         }
     }
     
     private func beginCharging() {
-        chargeProgress = habit.progress
+        chargeProgress = habitProgress
         timer?.invalidate()
         
         timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
             if chargeProgress < 1.0 {
                 chargeProgress = min(chargeProgress + 0.02, 1.0)
-                onChargeUpdate(habit, chargeProgress, true)
+                onChargeUpdate(chargeProgress, true)
                 
                 if chargeProgress >= 1.0 {
                     triggerSuccessVibration()
@@ -95,9 +98,9 @@ struct HabitCardView: View {
         
         if chargeProgress < 1.0 {
             withAnimation(.easeOut(duration: 0.3)) {
-                chargeProgress = habit.progress
+                chargeProgress = habitProgress
             }
-            onChargeUpdate(habit, habit.progress, false)
+            onChargeUpdate(habitProgress, false)
         }
     }
     
