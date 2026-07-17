@@ -59,12 +59,12 @@ struct HabitCardView: View {
                 .fill(Color.white.opacity(0.05))
                 .background(RoundedRectangle(cornerRadius: 24).stroke(Color.white.opacity(0.1), lineWidth: 1))
         )
-        .contextMenu {
+        // 使用 swipeActions 取代 contextMenu，解決長按手勢衝突問題
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             Button(role: .destructive) {
                 showDeleteConfirm = true
             } label: {
-                // 修正：更換為與目前 Xcode 15.4 相容性更穩定的初始化參數
-                Label("刪除習慣", systemImage: "trash")
+                Label("刪除", systemImage: "trash")
             }
         }
         .alert("刪除習慣", isPresented: $showDeleteConfirm) {
