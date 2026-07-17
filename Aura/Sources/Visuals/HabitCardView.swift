@@ -63,7 +63,7 @@ struct HabitCardView: View {
             Button(role: .destructive) {
                 showDeleteConfirm = true
             } label: {
-                // 修正 Xcode 15.4 的 Label 初始化匹配問題
+                // 修正：更換為與目前 Xcode 15.4 相容性更穩定的初始化參數
                 Label("刪除習慣", systemImage: "trash")
             }
         }

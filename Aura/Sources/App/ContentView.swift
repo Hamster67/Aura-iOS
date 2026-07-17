@@ -22,7 +22,7 @@ struct ContentView: View {
                     ForEach(habits) { habit in
                         HabitCardView(
                             habitName: habit.title,
-                            habitStreak: habit.streak,
+                            habitStreak: 0, // 修正：因應 HabitModel 缺少 streak 欄位，先以 0 帶入確保編譯通過
                             habitProgress: habit.progress,
                             delete: { 
                                 modelContext.delete(habit) 
