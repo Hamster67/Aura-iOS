@@ -14,6 +14,7 @@ jobs:
       SCHEME: Aura
       ARCHIVE_PATH: ${{ github.workspace }}/build/Aura.xcarchive
       EXPORT_PATH: ${{ github.workspace }}/build/export
+      DERIVED_DATA_PATH: ${{ github.workspace }}/build/DerivedData
       TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
       HAS_SIGNING: ${{ secrets.BUILD_CERTIFICATE_BASE64 != '' }}
     steps:
@@ -23,8 +24,15 @@ jobs:
       - name: Verify unsigned Release build
         run: >-
           xcodebuild clean build -project "$PROJECT" -scheme "$SCHEME"
-          -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO
+          -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath "$DERIVED_DATA_PATH" CODE_SIGNING_ALLOWED=NO
           CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+      - name: Package unsigned IPA
+        run: |
+          APP_PATH="$DERIVED_DATA_PATH/Build/Products/Release-iphoneos/Aura.app"
+          test -d "$APP_PATH"
+          mkdir -p build/unsigned/Payload
+          cp -R "$APP_PATH" build/unsigned/Payload/Aura.app
+          ditto -c -k --sequesterRsrc --keepParent build/unsigned/Payload build/Aura-unsigned.ipa
       - name: Install distribution certificate and provisioning profile
         if: env.HAS_SIGNING == 'true' && github.event_name != 'pull_request'
         env:
@@ -49,7 +57,7 @@ jobs:
         if: env.HAS_SIGNING == 'true' && github.event_name != 'pull_request'
         run: >-
           xcodebuild clean archive -project "$PROJECT" -scheme "$SCHEME"
-          -configuration Release -archivePath "$ARCHIVE_PATH" DEVELOPMENT_TEAM="$TEAM_ID"
+          -configuration Release -archivePath "$ARCHIVE_PATH" -derivedDataPath "$DERIVED_DATA_PATH" DEVELOPMENT_TEAM="$TEAM_ID"
       - name: Export IPA
         if: env.HAS_SIGNING == 'true' && github.event_name != 'pull_request'
         run: >-
