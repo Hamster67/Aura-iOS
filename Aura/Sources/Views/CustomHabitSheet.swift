@@ -19,7 +19,7 @@ struct CustomHabitSheet: View {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 26) {
                         Text("創建任務").font(.system(size: 34, weight: .bold, design: .rounded))
-                        TextField("今天要做什麼呢?", text: $title)
+                        TextField("今天要做什麼事呢?", text: $title)
                             .textInputAutocapitalization(.sentences)
                             .padding(17).background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
 
