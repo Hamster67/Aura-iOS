@@ -8,14 +8,16 @@ struct CustomHabitSheet: View {
     @State private var title = ""
     // 預設霓虹色：青色、粉紫、橘紅、螢光綠、鮮黃
     @State private var selectedColorHex = "#00F2FE" 
+    // 預設 SF Symbol 圖示
+    @State private var selectedIcon = "bolt.shield"
     
     let neonColors = ["#00F2FE", "#F355DA", "#FF5E62", "#1ADF66", "#FFD200"]
-    let colorNames = ["冰晶青", "霓虹粉", "烈焰紅", "極光綠", "曜石黃"]
+    let icons = ["bolt.shield", "sparkles", "brain.headlight", "heart.text.square", "moon.stars"]
 
     var body: some View {
         NavigationStack {
             ZStack {
-                // 深色極簡背景，帶有微弱的漸層
+                // 深色極簡背景
                 LinearGradient(
                     colors: [Color(hex: "#0B0D17"), Color(hex: "#16192B")],
                     startPoint: .top,
@@ -23,14 +25,14 @@ struct CustomHabitSheet: View {
                 )
                 .ignoresSafeArea()
                 
-                VStack(spacing: 28) {
+                VStack(spacing: 24) {
                     // 頂部裝飾條
                     Capsule()
                         .fill(.white.opacity(0.15))
                         .frame(width: 40, height: 4)
                         .padding(.top, 12)
                     
-                    VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Text("設定新的意圖")
                             .font(.system(size: 24, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
@@ -62,15 +64,42 @@ struct CustomHabitSheet: View {
                     )
                     .padding(.horizontal, 24)
                     
+                    // 圖示選取區
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("儀式標誌")
+                            .font(.system(size: 12, weight: .semibold)).tracking(1.2)
+                            .foregroundStyle(.white.opacity(0.4))
+                        
+                        HStack(spacing: 16) {
+                            ForEach(icons, id: \.self) { icon in
+                                Button {
+                                    selectedIcon = icon
+                                } label: {
+                                    Image(systemName: icon)
+                                        .font(.system(size: 20, weight: .medium))
+                                        .foregroundStyle(selectedIcon == icon ? Color(hex: selectedColorHex) : .white.opacity(0.4))
+                                        .frame(width: 46, height: 46)
+                                        .background(selectedIcon == icon ? Color(hex: selectedColorHex).opacity(0.15) : Color.white.opacity(0.05))
+                                        .clipShape(Circle())
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color(hex: selectedColorHex).opacity(selectedIcon == icon ? 0.6 : 0), lineWidth: 1)
+                                        )
+                                }
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    
                     // 霓虹色彩選取區
-                    VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 12) {
                         Text("能量色彩")
                             .font(.system(size: 12, weight: .semibold)).tracking(1.2)
                             .foregroundStyle(.white.opacity(0.4))
                         
                         HStack(spacing: 18) {
-                            ForEach(0..<neonColors.count, id: \.self) { index in
-                                let hex = neonColors[index]
+                            ForEach(neonColors, id: \.self) { hex in
                                 Button {
                                     withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                                         selectedColorHex = hex
@@ -94,10 +123,14 @@ struct CustomHabitSheet: View {
                     
                     Spacer()
                     
-                    // 建立按鈕
+                    // 建立按鈕（修正關鍵：補上 iconName 參數）
                     Button {
                         guard !title.isEmpty else { return }
-                        let newHabit = HabitModel(title: title, colorHex: selectedColorHex)
+                        let newHabit = HabitModel(
+                            title: title,
+                            colorHex: selectedColorHex,
+                            iconName: selectedIcon
+                        )
                         modelContext.insert(newHabit)
                         dismiss()
                     } label: {
@@ -135,7 +168,7 @@ extension Color {
         case 6: // RGB (24-bit)
             (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
         case 8: // ARGB (32-bit)
-            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+            (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
         default:
             (a, r, g, b) = (1, 1, 1, 1)
         }
