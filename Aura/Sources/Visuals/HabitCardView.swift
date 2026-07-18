@@ -52,7 +52,6 @@ struct HabitCardView: View {
                     .frame(width: 44, height: 44)
                     .background(.white.opacity(0.05), in: Circle())
             }
-            // 關鍵修正 1：高優先級手勢給選單按鈕，防止被外層長按/連點手勢攔截
             .highPriorityGesture(TapGesture())
         }
         .padding(.all, 20)
@@ -63,24 +62,50 @@ struct HabitCardView: View {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .stroke(.white.opacity(0.08), lineWidth: 1)
         )
-        // 點擊卡片其餘空白處觸發儀式
         .onTapGesture {
             onTriggerRitual()
         }
-        // 彈出編輯視窗
         .sheet(isPresented: $isEditing) {
             EditHabitSheet(habit: habit)
         }
     }
 }
 
-/// 獨立的編輯意圖視窗
+/// 升級版：支援搜尋數百種 SF Symbols 的編輯視窗
 struct EditHabitSheet: View {
     @Bindable var habit: HabitModel
     @Environment(\.dismiss) private var dismiss
     
+    @State private var searchText = ""
+    
     let neonColors = ["#00F2FE", "#F355DA", "#FF5E62", "#1ADF66", "#FFD200"]
-    let icons = ["bolt.shield", "sparkles", "brain.headlight", "heart.text.square", "moon.stars"]
+    
+    // 精選常用捷徑/任務圖示資料庫 (涵蓋健康、正念、工作、生活、運動)
+    let allSymbols = [
+        // 核心與能量
+        "bolt.shield", "sparkles", "brain.headlight", "heart.text.square", "moon.stars", "flame", "drop.fill", "sun.max",
+        // 健康與生活
+        "figure.mind.and.body", "figure.walk", "figure.run", "heart.fill", "pills", "bed.double.fill", "lungs.fill",
+        // 工作與學習
+        "book.closed", "doc.text", "laptopcomputer", "terminal", "pencil.and.outline", "graduationcap", "briefcase",
+        // 儀式感與日常
+        "cup.and.saucer", "fork.knife", "wineglass", "hourglass", "timer", "alarm", "bell", "calendar",
+        // 靜心與環境
+        "leaf", "tree", "wind", "guitars", "music.note", "house", "infinity", "scope", "eye"
+    ]
+    
+    // 過濾後的圖示清單
+    var filteredSymbols: [String] {
+        if searchText.isEmpty {
+            return allSymbols
+        } else {
+            // 如果使用者搜尋，可以即時匹配
+            return allSymbols.filter { $0.lowercased().contains(searchText.lowercased()) }
+        }
+    }
+    
+    // 網格佈局（一行 5 個）
+    let columns = [GridItem(.adaptive(minimum: 50))]
 
     var body: some View {
         NavigationStack {
@@ -92,7 +117,7 @@ struct EditHabitSheet: View {
                 )
                 .ignoresSafeArea()
                 
-                VStack(spacing: 24) {
+                VStack(spacing: 20) {
                     Capsule()
                         .fill(.white.opacity(0.15))
                         .frame(width: 40, height: 4)
@@ -104,7 +129,7 @@ struct EditHabitSheet: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 24)
                     
-                    // 輸入框
+                    // 1. 意圖名稱輸入框
                     VStack(alignment: .leading, spacing: 12) {
                         Text("意圖名稱")
                             .font(.system(size: 12, weight: .semibold)).tracking(1.2)
@@ -125,31 +150,7 @@ struct EditHabitSheet: View {
                     )
                     .padding(.horizontal, 24)
                     
-                    // 圖示
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("變更標誌")
-                            .font(.system(size: 12, weight: .semibold)).tracking(1.2)
-                            .foregroundStyle(.white.opacity(0.4))
-                        
-                        HStack(spacing: 16) {
-                            ForEach(icons, id: \.self) { icon in
-                                Button {
-                                    habit.iconName = icon
-                                } label: {
-                                    Image(systemName: icon)
-                                        .font(.system(size: 20, weight: .medium))
-                                        .foregroundStyle(habit.iconName == icon ? Color(hex: habit.colorHex) : .white.opacity(0.4))
-                                        .frame(width: 46, height: 46)
-                                        .background(habit.iconName == icon ? Color(hex: habit.colorHex).opacity(0.15) : Color.white.opacity(0.05))
-                                        .clipShape(Circle())
-                                }
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 24)
-                    
-                    // 顏色
+                    // 2. 顏色調整
                     VStack(alignment: .leading, spacing: 12) {
                         Text("調整色彩")
                             .font(.system(size: 12, weight: .semibold)).tracking(1.2)
@@ -164,7 +165,7 @@ struct EditHabitSheet: View {
                                 } label: {
                                     Circle()
                                         .fill(Color(hex: hex))
-                                        .frame(width: 38, height: 38)
+                                        .frame(width: 36, height: 36)
                                         .overlay(
                                             Circle()
                                                 .stroke(.white, lineWidth: habit.colorHex == hex ? 2 : 0)
@@ -175,6 +176,51 @@ struct EditHabitSheet: View {
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    
+                    // 3. 圖示搜尋與滾動選擇區
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("變更標誌（支援搜尋捷徑圖示）")
+                            .font(.system(size: 12, weight: .semibold)).tracking(1.2)
+                            .foregroundStyle(.white.opacity(0.4))
+                        
+                        // 搜尋列
+                        HStack {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundStyle(.white.opacity(0.3))
+                            TextField("搜尋圖示... (輸入英文例如 heart, run)", text: $searchText)
+                                .font(.system(size: 14))
+                                .foregroundStyle(.white)
+                        }
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 14)
+                        .background(.white.opacity(0.05))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        
+                        // 可滾動的網格
+                        ScrollView {
+                            LazyVGrid(columns: columns, spacing: 14) {
+                                ForEach(filteredSymbols, id: \.self) { icon in
+                                    Button {
+                                        habit.iconName = icon
+                                    } label: {
+                                        Image(systemName: icon)
+                                            .font(.system(size: 20))
+                                            .foregroundStyle(habit.iconName == icon ? Color(hex: habit.colorHex) : .white.opacity(0.4))
+                                            .frame(width: 46, height: 46)
+                                            .background(habit.iconName == icon ? Color(hex: habit.colorHex).opacity(0.15) : Color.white.opacity(0.04))
+                                            .clipShape(Circle())
+                                            .overlay(
+                                                Circle()
+                                                    .stroke(Color(hex: habit.colorHex).opacity(habit.iconName == icon ? 0.5 : 0), lineWidth: 1)
+                                            )
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 6)
+                        }
+                        .frame(maxHeight: 180) // 限制高度，防止壓縮到其他 UI
+                    }
                     .padding(.horizontal, 24)
                     
                     Spacer()
