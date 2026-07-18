@@ -8,8 +8,8 @@ struct HabitCardView: View {
     let delete: () -> Void
     let onChargeUpdate: (HabitModel, Double, Bool) -> Void
 
-    /// Resets automatically when the long-press gesture ends or is cancelled.
-    @GestureState private var isLongPressing = false
+    // 修正：改用 @State 配合 DragGesture 進行手勢狀態追蹤
+    @State private var isLongPressing = false
     @State private var chargingProgress = 0.0
     @State private var chargeTask: Task<Void, Never>?
     @State private var magnification = 1.0
@@ -60,10 +60,8 @@ struct HabitCardView: View {
         .background(glassSurface)
         .scaleEffect(1 + (magnification - 1) * 0.06)
         .contentShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+        // 組合點擊與縮放手勢
         .gesture(longPressGesture.simultaneously(with: pinchToDeleteGesture))
-        .onChange(of: isLongPressing) { _, pressing in
-            pressing ? beginCharging() : endCharging()
-        }
         .onDisappear { chargeTask?.cancel() }
     }
 
@@ -77,10 +75,20 @@ struct HabitCardView: View {
             .shadow(color: tint.opacity(habit.isComplete ? 0.48 : 0.16), radius: habit.isComplete ? 25 : 12)
     }
 
+    // 修正：使用 DragGesture(minimumDistance: 0) 替代原有的 LongPressGesture
     private var longPressGesture: some Gesture {
-        LongPressGesture(minimumDuration: 1.5, maximumDistance: 36)
-            .updating($isLongPressing) { value, state, _ in
-                state = value
+        DragGesture(minimumDistance: 0)
+            .onChanged { _ in
+                // 確保只在剛觸發且未充電時啟動 Task
+                if !isLongPressing {
+                    isLongPressing = true
+                    beginCharging()
+                }
+            }
+            .onEnded { _ in
+                // 手指抬起，立刻中斷並回彈
+                isLongPressing = false
+                endCharging()
             }
     }
 
@@ -101,6 +109,7 @@ struct HabitCardView: View {
         let startedAt = Date.now
 
         chargeTask = Task { @MainActor in
+            // 這裡會持續檢查 isLongPressing 的狀態
             while !Task.isCancelled && isLongPressing {
                 let progress = min(1, Date.now.timeIntervalSince(startedAt) / chargeDuration)
                 chargingProgress = progress
@@ -111,6 +120,7 @@ struct HabitCardView: View {
                 onChargeUpdate(habit, progress, true)
                 if progress >= 1 {
                     chargeTask = nil
+                    isLongPressing = false // 蓄滿後重置手勢狀態
                     UINotificationFeedbackGenerator().notificationOccurred(.success)
                     onChargeUpdate(habit, 1, false)
                     return
