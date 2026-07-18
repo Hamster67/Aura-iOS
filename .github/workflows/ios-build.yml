@@ -19,13 +19,12 @@ jobs:
       - name: Select Xcode 15
         run: sudo xcode-select --switch /Applications/Xcode_15.4.app
 
-      - name: Generate Beautiful Aura App Icon
+      - name: Generate Beautiful Aura App Icon (All Sizes & Sync Contents.json)
         run: |
           cat << 'EOF' > generate_icon.swift
           import SwiftUI
           import Cocoa
 
-          // 1. 將圖示 SwiftUI 程式碼直接內嵌在腳本中
           struct AuraAppIconView: View {
               var body: some View {
                   ZStack {
@@ -86,42 +85,69 @@ jobs:
               }
           }
 
-          // 2. 記憶體中渲染成 1024x1024 PNG
-          let view = NSHostingView(rootView: AuraAppIconView())
-          view.frame = NSRect(x: 0, y: 0, width: 1024, height: 1024)
-          
-          let bitmapRep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
-          view.cacheDisplay(in: view.bounds, to: bitmapRep)
-          
-          if let pngData = bitmapRep.representation(using: .png, properties: [:]) {
-              let fm = FileManager.default
-              // 自動在專案中找出 AppIcon.appiconset 的實際目錄位置
-              let currentDirectory = fm.currentDirectoryPath
-              guard let enumerator = fm.navigator(at: currentDirectory) else { exit(1) }
-              
-              var targetURL: URL? = nil
-              for case let fileURL as URL in enumerator {
-                  if fileURL.lastPathComponent == "AppIcon.appiconset" {
-                      targetURL = fileURL
-                      break
-                  }
-              }
-              
-              if let assetFolder = targetURL {
-                  // 覆蓋原本的 1024 圖片
-                  let dest1024 = assetFolder.appendingPathComponent("Icon-App-1024x1024@1x.png")
-                  try? pngData.write(to: dest1024)
-                  print("✅ Aura 玻璃能量水珠圖示已成功渲染並替換至: \(dest1024.path)")
-              } else {
-                  print("❌ 找不到 AppIcon.appiconset 資料夾，請檢查專案資產結構。")
+          // 輔助將 SwiftUI 視圖渲染成指定大小並存檔的方法
+          func saveIcon(view: AuraAppIconView, size: CGFloat, to url: URL) {
+              let hostingView = NSHostingView(rootView: view)
+              hostingView.frame = NSRect(x: 0, y: 0, width: size, height: size)
+              let bitmapRep = hostingView.bitmapImageRepForCachingDisplay(in: hostingView.bounds)!
+              hostingView.cacheDisplay(in: hostingView.bounds, to: bitmapRep)
+              if let pngData = bitmapRep.representation(using: .png, properties: [:]) {
+                  try? pngData.write(to: url)
               }
           }
-          
-          // 輔助尋找資料夾的方法
-          extension FileManager {
-              func navigator(at path: String) -> FileManager.DirectoryEnumerator? {
-                  return enumerator(at: URL(fileURLWithPath: path), includingPropertiesForKeys: nil, options: [.skipsHiddenFiles], errorHandler: nil)
+
+          let fm = FileManager.default
+          let currentDirectory = fm.currentDirectoryPath
+
+          // 核心修正：強制搜尋所有可能的 AppIcon 資料夾（確保覆蓋到 Flutter 根目錄中的原始檔案）
+          guard let enumerator = fm.enumerator(at: URL(fileURLWithPath: currentDirectory), includingPropertiesForKeys: nil, options: [.skipsHiddenFiles], errorHandler: nil) else { exit(1) }
+
+          var targets: [URL] = []
+          for case let fileURL as URL in enumerator {
+              if fileURL.lastPathComponent == "AppIcon.appiconset" {
+                  targets.append(fileURL)
               }
+          }
+
+          if targets.isEmpty {
+              print("❌ 找不到任何 AppIcon.appiconset 資料夾")
+              exit(1)
+          }
+
+          let iconView = AuraAppIconView()
+
+          // 對找到的每一個 AppIcon 夾（不論是 Xcode 快取還是 Flutter 原始目錄）都清洗一次
+          for assetFolder in targets {
+              print("📥 正在全面重構圖示庫: \(assetFolder.path)")
+              
+              // 輸出所有 iOS 桌面必備尺寸
+              saveIcon(view: iconView, size: 1024, to: assetFolder.appendingPathComponent("appstore.png"))
+              saveIcon(view: iconView, size: 180, to: assetFolder.appendingPathComponent("iphone-60@3x.png"))
+              saveIcon(view: iconView, size: 120, to: assetFolder.appendingPathComponent("iphone-60@2x.png"))
+              saveIcon(view: iconView, size: 87, to: assetFolder.appendingPathComponent("iphone-29@3x.png"))
+              saveIcon(view: iconView, size: 58, to: assetFolder.appendingPathComponent("iphone-29@2x.png"))
+              saveIcon(view: iconView, size: 80, to: assetFolder.appendingPathComponent("iphone-40@2x.png"))
+              saveIcon(view: iconView, size: 120, to: assetFolder.appendingPathComponent("iphone-40@3x.png"))
+
+              // 同步寫入強制的 Contents.json 配置檔，綁定上述生成的新圖片
+              let jsonContent = """
+              {
+                "images" : [
+                  { "size" : "29x29", "idiom" : "iphone", "filename" : "iphone-29@2x.png", "scale" : "2x" },
+                  { "size" : "29x29", "idiom" : "iphone", "filename" : "iphone-29@3x.png", "scale" : "3x" },
+                  { "size" : "40x40", "idiom" : "iphone", "filename" : "iphone-40@2x.png", "scale" : "2x" },
+                  { "size" : "40x40", "idiom" : "iphone", "filename" : "iphone-40@3x.png", "scale" : "3x" },
+                  { "size" : "60x60", "idiom" : "iphone", "filename" : "iphone-60@2x.png", "scale" : "2x" },
+                  { "size" : "60x60", "idiom" : "iphone", "filename" : "iphone-60@3x.png", "scale" : "3x" },
+                  { "size" : "1024x1024", "idiom" : "ios-marketing", "filename" : "appstore.png", "scale" : "1x" }
+                ],
+                "info" : { "version" : 1, "author" : "xcode" }
+              }
+              """
+              
+              let jsonURL = assetFolder.appendingPathComponent("Contents.json")
+              try? jsonContent.write(to: jsonURL, encoding: .utf8)
+              print("✅ 成功複寫並綁定該目錄下的 Contents.json")
           }
           EOF
           

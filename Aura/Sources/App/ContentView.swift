@@ -224,13 +224,13 @@ struct ParticleBurstView: View {
 }
 
 // ==========================================
-// MARK: - 全螢幕互動艙與原地慶祝畫面 (FullScreenRitualView)
+// MARK: - 修正版：全螢幕互動艙與原地慶祝畫面 (FullScreenRitualView)
 // ==========================================
 struct FullScreenRitualView: View {
     let habitName: String
     let completionMethod: Int
     let initialProgress: Double
-    let themeColors: [Color] // 繼承主畫面的背景配色
+    let themeColors: [Color] 
     
     var onComplete: (Double) -> Void
     var onDismiss: () -> Void
@@ -248,7 +248,7 @@ struct FullScreenRitualView: View {
 
     var body: some View {
         ZStack {
-            // 背景自動適配主畫面氛圍
+            // 1. 背景層
             LinearGradient(colors: themeColors, startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea()
                 .overlay(
@@ -259,25 +259,11 @@ struct FullScreenRitualView: View {
                         .offset(y: -40)
                 )
             
-            // 粒子特效層（炸開時浮現在按鈕上方）
+            // 2. 粒子特效層
             ParticleBurstView(trigger: $triggerParticleBurst, burstColor: themeColors.first ?? .purple)
                 .zIndex(5)
             
-            VStack {
-                HStack {
-                    Spacer()
-                    Button {
-                        onDismiss()
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.title)
-                            .foregroundStyle(.black.opacity(0.2))
-                    }
-                    .padding(24)
-                }
-                Spacer()
-            }
-            
+            // 3. 主要內容互動層
             VStack(spacing: 40) {
                 if !isCelebrated {
                     VStack(spacing: 12) {
@@ -290,7 +276,9 @@ struct FullScreenRitualView: View {
                             .foregroundStyle(.black.opacity(0.5))
                             .tracking(1)
                     }
+                    .padding(.top, 60) // 預留頂部空間給關閉按鈕
                     
+                    // 【關鍵修正】：把手勢直接焊死在圓球容器本身，不再往外擴散
                     ZStack {
                         Circle()
                             .stroke(Color.black.opacity(0.05), lineWidth: 8)
@@ -315,8 +303,10 @@ struct FullScreenRitualView: View {
                                     .foregroundColor(isCharging ? .yellow : .black.opacity(0.6))
                             )
                     }
+                    .frame(width: 200, height: 200) // 嚴格限制點擊熱區範圍
                     .scaleEffect(visualScale)
                     .animation(.spring(response: 0.2, dampingFraction: 0.5), value: visualScale)
+                    // 將隱形手勢墊片移入圓球本體內
                     .overlay(
                         Group {
                             if completionMethod == 0 {
@@ -340,7 +330,10 @@ struct FullScreenRitualView: View {
                         .foregroundColor(.black.opacity(0.4))
                     
                 } else {
+                    // 慶祝完成畫面
                     VStack(spacing: 24) {
+                        Spacer()
+                        
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 110, weight: .black))
                             .foregroundStyle(LinearGradient(colors: [.blue, .purple], startPoint: .top, endPoint: .bottom))
@@ -355,21 +348,48 @@ struct FullScreenRitualView: View {
                             .font(.subheadline)
                             .foregroundColor(.black.opacity(0.6))
                         
-                        Button("完成並返回") {
+                        // 【按鈕點擊修正】：確保此處使用最高點擊響應
+                        Button(action: {
                             onComplete(currentProgress)
                             onDismiss()
+                        }) {
+                            Text("完成並返回")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 40)
+                                .padding(.vertical, 16)
+                                .background(Capsule().fill(.black))
                         }
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 40)
-                        .padding(.vertical, 16)
-                        .background(Capsule().fill(.black))
+                        .buttonStyle(.plain)
                         .padding(.top, 20)
+                        
+                        Spacer()
                     }
                     .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
                 }
             }
             .padding(.horizontal, 40)
+            
+            // 4. 【關鍵修正】：把關閉按鈕移至 ZStack 最底層（也就是視覺最上層）並強制給予最高 zIndex
+            if !isCelebrated {
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            onDismiss()
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 30))
+                                .foregroundStyle(.black.opacity(0.3))
+                                .padding(24)
+                                .contentShape(Rectangle()) // 擴大打叉按鈕的點擊熱區
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    Spacer()
+                }
+                .zIndex(10) // 確保在隱形牆之上
+            }
         }
         .onAppear {
             currentProgress = initialProgress
@@ -422,7 +442,6 @@ struct FullScreenRitualView: View {
         timer = nil
         isCharging = false
         
-        // 觸發粒子爆炸
         triggerParticleBurst = true
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         
