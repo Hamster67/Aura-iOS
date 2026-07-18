@@ -92,17 +92,17 @@ struct ContentView: View {
                                     ForEach(habits) { habit in
                                         Menu {
                                             if habit.isPaused {
-                                                Button("▶️ 恢復打卡") { habit.isPaused = false }
+                                                Button("恢復打卡") { habit.isPaused = false }
                                             } else {
-                                                Button("⏸️ 無限期暫停") {
+                                                Button("無限期暫停") {
                                                     habit.isPaused = true
                                                     triggerOverlay(message: "「\(habit.title)」已暫停\n正在進入休眠儀式...")
                                                 }
-                                                Button("⏭️ 略過 1 天") {
+                                                Button("略過 1 天") {
                                                     habit.skipUntilDate = Calendar.current.date(byAdding: .day, value: 1, to: Date())
                                                     triggerOverlay(message: "已略過「\(habit.title)」本日打卡\n維持能量流動中...")
                                                 }
-                                                Button("⏭️ 略過 3 天") {
+                                                Button("略過 3 天") {
                                                     habit.skipUntilDate = Calendar.current.date(byAdding: .day, value: 3, to: Date())
                                                     triggerOverlay(message: "已為「\(habit.title)」請假 3 天\n好好調整呼吸...")
                                                 }
@@ -159,7 +159,7 @@ struct ContentView: View {
                 .padding(.horizontal, 20).padding(.bottom, 40)
             }
             
-            // 🔒 3秒強制的極簡全螢幕鎖定退出層
+            // 🔒 3秒強制的極簡全螢幕鎖定退出層（已優化流暢縮放與淡入淡出動畫）
             if showOverlay, let message = overlayMessage {
                 ZStack {
                     Color.black.opacity(0.96)
@@ -176,10 +176,14 @@ struct ContentView: View {
                             .multilineTextAlignment(.center)
                             .foregroundStyle(.white)
                             .padding(.horizontal, 40)
-                            .transition(.move(edge: .top))
                     }
+                    .scaleEffect(showOverlay ? 1.0 : 0.92)
                 }
-                .transition(.opacity)
+                // 進入時從 0.92x 微幅縮放淡入，退出時往外放大至 1.05x 柔和淡出
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .scale(scale: 0.92)),
+                    removal: .opacity.combined(with: .scale(scale: 1.05))
+                ))
             }
         }
         .foregroundStyle(.white)
@@ -214,17 +218,73 @@ struct ContentView: View {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
     }
     
-    // 執行 3 秒遮罩計時器
+    // 執行 3 秒遮罩計時器（優化動畫曲線）
     private func triggerOverlay(message: String) {
         overlayTimer?.invalidate()
         overlayMessage = message
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+        
+        // 彈簧動畫切入
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.78, initialVelocity: 0.5)) {
             showOverlay = true
         }
         
         overlayTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
-            withAnimation(.easeInOut(duration: 0.3)) {
+            // 特製曲線淡出
+            withAnimation(.curveEaseInDuration(0.3)) {
                 showOverlay = false
+            }
+        }
+    }
+}
+
+// MARK: - 動態曲線擴充
+extension Animation {
+    static func curveEaseInDuration(_ duration: TimeInterval) -> Animation {
+        return .timingCurve(0.42, 0, 1, 1, duration: duration)
+    }
+}
+
+// MARK: - 建立習慣表單範例（防禦建立時缺少圖示的問題）
+struct CustomHabitSheet: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    
+    @State private var title: String = ""
+    @State private var colorHex: String = "#00FFFF"
+    // 💡 建立初始化時直接塞入一個預設的捷徑圖示名稱（例如 "sparkles" 或 "ellipsis.circle.fill"）
+    @State private var selectedIcon: String = "ellipsis.circle.fill"
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("任務名稱") {
+                    TextField("例如：每日冥想、核心訓練", text: $title)
+                }
+                
+                Section("任務圖示") {
+                    HStack {
+                        Image(systemName: selectedIcon)
+                            .font(.title2)
+                            .foregroundStyle(.cyan)
+                        Text("將設定此任務圖示")
+                    }
+                }
+            }
+            .navigationTitle("新任務")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("建立") {
+                        // 💡 寫入 SwiftData 時，務必確保傳入了 iconName 變數
+                        let newHabit = HabitModel(
+                            title: title,
+                            iconName: selectedIcon, 
+                            colorHex: colorHex
+                        )
+                        modelContext.insert(newHabit)
+                        dismiss()
+                    }
+                    .disabled(title.isEmpty)
+                }
             }
         }
     }
