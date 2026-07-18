@@ -19,6 +19,114 @@ jobs:
       - name: Select Xcode 15
         run: sudo xcode-select --switch /Applications/Xcode_15.4.app
 
+      - name: Generate Beautiful Aura App Icon
+        run: |
+          cat << 'EOF' > generate_icon.swift
+          import SwiftUI
+          import Cocoa
+
+          // 1. 將圖示 SwiftUI 程式碼直接內嵌在腳本中
+          struct AuraAppIconView: View {
+              var body: some View {
+                  ZStack {
+                      Color(red: 0.05, green: 0.06, blue: 0.12)
+                      
+                      Circle()
+                          .fill(RadialGradient(
+                              colors: [.init(red: 0.0, green: 0.8, blue: 1.0).opacity(0.6), .clear],
+                              center: .center, startRadius: 50, endRadius: 850
+                          ))
+                          .offset(x: -120, y: -120)
+                      
+                      Circle()
+                          .fill(RadialGradient(
+                              colors: [.init(red: 0.9, green: 0.3, blue: 0.9).opacity(0.5), .clear],
+                              center: .center, startRadius: 50, endRadius: 800
+                          ))
+                          .offset(x: 150, y: 180)
+
+                      // 玻璃水珠
+                      ZStack {
+                          Circle()
+                              .fill(.white.opacity(0.07))
+                              .background(
+                                  Circle()
+                                      .fill(LinearGradient(
+                                          colors: [.white.opacity(0.25), .clear, .init(red: 0.0, green: 0.8, blue: 1.0).opacity(0.25)],
+                                          startPoint: .topLeading, endPoint: .bottomTrailing
+                                      ))
+                              )
+                          
+                          Circle()
+                              .stroke(
+                                  LinearGradient(
+                                      colors: [.white.opacity(0.65), .white.opacity(0.1), .init(red: 0.0, green: 0.8, blue: 1.0).opacity(0.4)],
+                                      startPoint: .topLeading, endPoint: .bottomTrailing
+                                  ),
+                                  lineWidth: 8
+                              )
+                          
+                          Ellipse()
+                              .fill(.white.opacity(0.6))
+                              .frame(width: 160, height: 90)
+                              .rotationEffect(.degrees(-30))
+                              .offset(x: -120, y: -150)
+                              .blur(radius: 2)
+                          
+                          Circle()
+                              .fill(Color(red: 0.8, green: 0.3, blue: 0.9).opacity(0.45))
+                              .frame(width: 220, height: 220)
+                              .offset(x: 90, y: 120)
+                              .blur(radius: 40)
+                      }
+                      .frame(width: 600, height: 600)
+                      .shadow(color: .black.opacity(0.6), radius: 60, x: 0, y: 40)
+                  }
+                  .frame(width: 1024, height: 1024)
+              }
+          }
+
+          // 2. 記憶體中渲染成 1024x1024 PNG
+          let view = NSHostingView(rootView: AuraAppIconView())
+          view.frame = NSRect(x: 0, y: 0, width: 1024, height: 1024)
+          
+          let bitmapRep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
+          view.cacheDisplay(in: view.bounds, to: bitmapRep)
+          
+          if let pngData = bitmapRep.representation(using: .png, properties: [:]) {
+              let fm = FileManager.default
+              // 自動在專案中找出 AppIcon.appiconset 的實際目錄位置
+              let currentDirectory = fm.currentDirectoryPath
+              guard let enumerator = fm.navigator(at: currentDirectory) else { exit(1) }
+              
+              var targetURL: URL? = nil
+              for case let fileURL as URL in enumerator {
+                  if fileURL.lastPathComponent == "AppIcon.appiconset" {
+                      targetURL = fileURL
+                      break
+                  }
+              }
+              
+              if let assetFolder = targetURL {
+                  // 覆蓋原本的 1024 圖片
+                  let dest1024 = assetFolder.appendingPathComponent("Icon-App-1024x1024@1x.png")
+                  try? pngData.write(to: dest1024)
+                  print("✅ Aura 玻璃能量水珠圖示已成功渲染並替換至: \(dest1024.path)")
+              } else {
+                  print("❌ 找不到 AppIcon.appiconset 資料夾，請檢查專案資產結構。")
+              }
+          }
+          
+          // 輔助尋找資料夾的方法
+          extension FileManager {
+              func navigator(at path: String) -> FileManager.DirectoryEnumerator? {
+                  return enumerator(at: URL(fileURLWithPath: path), includingPropertiesForKeys: nil, options: [.skipsHiddenFiles], errorHandler: nil)
+              }
+          }
+          EOF
+          
+          xcrun swift generate_icon.swift
+
       - name: Build Aura App
         run: >-
           xcodebuild clean build -project "$PROJECT" -scheme "$SCHEME"

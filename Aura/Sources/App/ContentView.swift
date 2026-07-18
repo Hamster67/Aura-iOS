@@ -432,3 +432,71 @@ struct FullScreenRitualView: View {
         }
     }
 }
+// ==========================================
+// MARK: - 自動生成專用：Aura 療癒系圖示
+// ==========================================
+struct AuraAppIconView: View {
+    var body: some View {
+        ZStack {
+            // 1. 深色底：像夜裡安靜的水面
+            Color(red: 0.05, green: 0.06, blue: 0.12)
+            
+            // 2. 底層的霓虹光暈（擴散的能量）
+            Circle()
+                .fill(RadialGradient(
+                    colors: [.init(red: 0.0, green: 0.8, blue: 1.0).opacity(0.6), .clear],
+                    center: .center, startRadius: 50, endRadius: 850
+                ))
+                .offset(x: -120, y: -120)
+            
+            Circle()
+                .fill(RadialGradient(
+                    colors: [.init(red: 0.9, green: 0.3, blue: 0.9).opacity(0.5), .clear],
+                    center: .center, startRadius: 50, endRadius: 800
+                ))
+                .offset(x: 150, y: 180)
+
+            // 3. 核心：一滴玻璃水珠 (Liquid Glass)
+            ZStack {
+                // 水珠主體與折射
+                Circle()
+                    .fill(.white.opacity(0.07))
+                    .background(
+                        Circle()
+                            .fill(LinearGradient(
+                                colors: [.white.opacity(0.25), .clear, .init(red: 0.0, green: 0.8, blue: 1.0).opacity(0.25)],
+                                startPoint: .topLeading, endPoint: .bottomTrailing
+                            ))
+                    )
+                
+                // 水珠邊緣的高光
+                Circle()
+                    .stroke(
+                        LinearGradient(
+                            colors: [.white.opacity(0.65), .white.opacity(0.1), .init(red: 0.0, green: 0.8, blue: 1.0).opacity(0.4)],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 8
+                    )
+                
+                // 頂部核心反光（被光喚醒的瞬間）
+                Ellipse()
+                    .fill(.white.opacity(0.6))
+                    .frame(width: 160, height: 90)
+                    .rotationEffect(.degrees(-30))
+                    .offset(x: -120, y: -150)
+                    .blur(radius: 2)
+                
+                // 底部環境折射光
+                Circle()
+                    .fill(Color(red: 0.8, green: 0.3, blue: 0.9).opacity(0.45))
+                    .frame(width: 220, height: 220)
+                    .offset(x: 90, y: 120)
+                    .blur(radius: 40)
+            }
+            .frame(width: 600, height: 600)
+            .shadow(color: .black.opacity(0.6), radius: 60, x: 0, y: 40)
+        }
+        .frame(width: 1024, height: 1024) // 嚴格符合 App Store 1024x1024 規格
+    }
+}
