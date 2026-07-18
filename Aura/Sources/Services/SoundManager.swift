@@ -1,15 +1,21 @@
 import Foundation
-import AudioToolbox
 import UIKit
 
 class SoundManager {
     static let shared = SoundManager()
     
-    static func playSuccessSound() { shared.playCompletionSound() }
-    static func playClickSound() { shared.playChargingSound() }
+    // 讓外部呼叫保持不變，但內部不執行任何聲音播放
+    static func playSuccessSound() { 
+        shared.triggerSuccessNotification() 
+    }
+    
+    static func playClickSound() { 
+        shared.triggerLightImpact() 
+    }
     
     init() {}
     
+    /// 觸發輕微的觸覺回饋（用於充能點擊、介面微幅互動）
     func triggerLightImpact() {
         DispatchQueue.main.async {
             let generator = UIImpactFeedbackGenerator(style: .light)
@@ -18,26 +24,12 @@ class SoundManager {
         }
     }
     
+    /// 觸發成功的觸覺回饋（用於儀式圓滿完成、進度滿格）
     func triggerSuccessNotification() {
         DispatchQueue.main.async {
             let generator = UINotificationFeedbackGenerator()
             generator.prepare()
             generator.notificationOccurred(.success)
         }
-    }
-    
-    /// 播放「點擊/充電上升」音效
-    func playChargingSound() {
-        // 改用 1104 (Tock 短音) 或 1157 (輕柔解鎖切換聲)
-        let systemSoundID: SystemSoundID = 1157 
-        AudioServicesPlaySystemSound(systemSoundID)
-    }
-    
-    /// 播放「儀式圓滿完成」音效
-    func playCompletionSound() {
-        // 改用 1022 (新簡訊傳送完成的輕快「嗖」聲) 或 1407 (引導完成的科技流暢聲)
-        // 這裡推薦 1022，很有任務達成的俐落空氣感，不會像敲鐘那麼突兀
-        let systemSoundID: SystemSoundID = 1022 
-        AudioServicesPlaySystemSound(systemSoundID)
     }
 }
