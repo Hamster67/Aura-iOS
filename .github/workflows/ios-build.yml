@@ -19,7 +19,7 @@ jobs:
       - name: Select Xcode 15
         run: sudo xcode-select --switch /Applications/Xcode_15.4.app
 
-      - name: Generate Beautiful Aura App Icon (All Sizes & Sync Contents.json)
+      - name: Generate Beautiful Aura App Icon (Direct Path Precision)
         run: |
           cat << 'EOF' > generate_icon.swift
           import SwiftUI
@@ -96,55 +96,48 @@ jobs:
           }
 
           let fm = FileManager.default
-          let currentDirectory = fm.currentDirectoryPath
+          let currentDirURL = URL(fileURLWithPath: fm.currentDirectoryPath)
 
-          guard let enumerator = fm.enumerator(at: URL(fileURLWithPath: currentDirectory), includingPropertiesForKeys: nil, options: [.skipsHiddenFiles], errorHandler: nil) else { exit(1) }
+          // 核心修正：不靠漫無目的的搜尋，直接精準鎖定並強行建立標準的 AppIcon 目錄
+          let targetAssetFolder = currentDirURL
+              .appendingPathComponent("Aura")
+              .appendingPathComponent("Assets.xcassets")
+              .appendingPathComponent("AppIcon.appiconset")
 
-          var targets: [URL] = []
-          for case let fileURL as URL in enumerator {
-              if fileURL.lastPathComponent == "AppIcon.appiconset" {
-                  targets.append(fileURL)
-              }
-          }
-
-          if targets.isEmpty {
-              print("❌ 找不到任何 AppIcon.appiconset 資料夾")
-              exit(1)
-          }
+          // 如果專案資料夾不存在，就強制建立它
+          try? fm.createDirectory(at: targetAssetFolder, withIntermediateDirectories: true, attributes: nil)
+          print("📥 目標圖示庫確認成功: \(targetAssetFolder.path)")
 
           let iconView = AuraAppIconView()
 
-          for assetFolder in targets {
-              print("📥 正在全面重構圖示庫: \(assetFolder.path)")
-              
-              saveIcon(view: iconView, size: 1024, to: assetFolder.appendingPathComponent("appstore.png"))
-              saveIcon(view: iconView, size: 180, to: assetFolder.appendingPathComponent("iphone-60@3x.png"))
-              saveIcon(view: iconView, size: 120, to: assetFolder.appendingPathComponent("iphone-60@2x.png"))
-              saveIcon(view: iconView, size: 87, to: assetFolder.appendingPathComponent("iphone-29@3x.png"))
-              saveIcon(view: iconView, size: 58, to: assetFolder.appendingPathComponent("iphone-29@2x.png"))
-              saveIcon(view: iconView, size: 80, to: assetFolder.appendingPathComponent("iphone-40@2x.png"))
-              saveIcon(view: iconView, size: 120, to: assetFolder.appendingPathComponent("iphone-40@3x.png"))
+          // 輸出所有需要的 iOS 尺寸
+          saveIcon(view: iconView, size: 1024, to: targetAssetFolder.appendingPathComponent("appstore.png"))
+          saveIcon(view: iconView, size: 180, to: targetAssetFolder.appendingPathComponent("iphone-60@3x.png"))
+          saveIcon(view: iconView, size: 120, to: targetAssetFolder.appendingPathComponent("iphone-60@2x.png"))
+          saveIcon(view: iconView, size: 87, to: targetAssetFolder.appendingPathComponent("iphone-29@3x.png"))
+          saveIcon(view: iconView, size: 58, to: targetAssetFolder.appendingPathComponent("iphone-29@2x.png"))
+          saveIcon(view: iconView, size: 80, to: targetAssetFolder.appendingPathComponent("iphone-40@2x.png"))
+          saveIcon(view: iconView, size: 120, to: targetAssetFolder.appendingPathComponent("iphone-40@3x.png"))
 
-              let jsonContent = """
-              {
-                "images" : [
-                  { "size" : "29x29", "idiom" : "iphone", "filename" : "iphone-29@2x.png", "scale" : "2x" },
-                  { "size" : "29x29", "idiom" : "iphone", "filename" : "iphone-29@3x.png", "scale" : "3x" },
-                  { "size" : "40x40", "idiom" : "iphone", "filename" : "iphone-40@2x.png", "scale" : "2x" },
-                  { "size" : "40x40", "idiom" : "iphone", "filename" : "iphone-40@3x.png", "scale" : "3x" },
-                  { "size" : "60x60", "idiom" : "iphone", "filename" : "iphone-60@2x.png", "scale" : "2x" },
-                  { "size" : "60x60", "idiom" : "iphone", "filename" : "iphone-60@3x.png", "scale" : "3x" },
-                  { "size" : "1024x1024", "idiom" : "ios-marketing", "filename" : "appstore.png", "scale" : "1x" }
-                ],
-                "info" : { "version" : 1, "author" : "xcode" }
-              }
-              """
-              
-              let jsonURL = assetFolder.appendingPathComponent("Contents.json")
-              // 【核心修正】：修正 Swift String 寫入方法的 API 簽名
-              try? jsonContent.write(to: jsonURL, atomically: true, encoding: .utf8)
-              print("✅ 成功複寫並綁定該目錄下的 Contents.json")
+          // 寫入對應的標準索引配置
+          let jsonContent = """
+          {
+            "images" : [
+              { "size" : "29x29", "idiom" : "iphone", "filename" : "iphone-29@2x.png", "scale" : "2x" },
+              { "size" : "29x29", "idiom" : "iphone", "filename" : "iphone-29@3x.png", "scale" : "3x" },
+              { "size" : "40x40", "idiom" : "iphone", "filename" : "iphone-40@2x.png", "scale" : "2x" },
+              { "size" : "40x40", "idiom" : "iphone", "filename" : "iphone-40@3x.png", "scale" : "3x" },
+              { "size" : "60x60", "idiom" : "iphone", "filename" : "iphone-60@2x.png", "scale" : "2x" },
+              { "size" : "60x60", "idiom" : "iphone", "filename" : "iphone-60@3x.png", "scale" : "3x" },
+              { "size" : "1024x1024", "idiom" : "ios-marketing", "filename" : "appstore.png", "scale" : "1x" }
+            ],
+            "info" : { "version" : 1, "author" : "xcode" }
           }
+          """
+
+          let jsonURL = targetAssetFolder.appendingPathComponent("Contents.json")
+          try? jsonContent.write(to: jsonURL, atomically: true, encoding: .utf8)
+          print("✅ 成功複寫並綁定該目錄下的 Contents.json")
           EOF
           
           xcrun swift generate_icon.swift
