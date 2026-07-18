@@ -175,7 +175,6 @@ struct ParticleBurstView: View {
                         width: 10 * particle.scale,
                         height: 10 * particle.scale
                     )
-                    // 繪製圓形發光星芒粒子
                     context.fill(Path(ellipseIn: rect), with: .color(particle.color))
                 }
             }
@@ -192,7 +191,6 @@ struct ParticleBurstView: View {
         var newParticles: [Particle] = []
         let colors: [Color] = [burstColor, .blue, .cyan, .white, .orange]
         
-        // 瞬間產生 40 個向四周噴發的星芒粒子
         for _ in 0..<40 {
             let angle = Double.random(in: 0...(2 * .pi))
             let speed = Double.random(in: 4...12)
@@ -213,18 +211,16 @@ struct ParticleBurstView: View {
         for i in 0..<particles.count {
             particles[i].position.x += particles[i].velocity.width
             particles[i].position.y += particles[i].velocity.height
-            // 模擬微小的阻力與重力下墜
             particles[i].velocity.height += 0.15 
             particles[i].opacity -= 0.02
             particles[i].scale *= 0.98
         }
-        // 移除看不見的粒子
         particles.removeAll { $0.opacity <= 0 }
     }
 }
 
 // ==========================================
-// MARK: - 降維打擊版：強佔最高手勢優先權 (FullScreenRitualView)
+// MARK: - 全螢幕互動與慶祝艙層 (FullScreenRitualView)
 // ==========================================
 struct FullScreenRitualView: View {
     let habitName: String
@@ -303,31 +299,22 @@ struct FullScreenRitualView: View {
                                     .foregroundColor(isCharging ? .yellow : .black.opacity(0.6))
                             )
                         
-                        // 【方案 B 核心修正】：利用實體白膠層結合同步手勢，繞過 Metal Shader 的手勢吞噬
+                        // 【方案 B 核心修正】：利用實體白膠層結合同步型別修飾符，繞過 Metal Shader 的手勢吞噬
                         Circle()
                             .fill(Color.white.opacity(0.01))
                             .frame(width: 200, height: 200)
                             .contentShape(Circle())
-                            .simultaneousGesture(
-                                Group {
-                                    if completionMethod == 0 {
-                                        // 連點模式：強制同步觸發點擊
-                                        TapGesture()
-                                            .onEnded {
-                                                triggerTapImpact()
-                                            }
+                            .modifier(DynamicGestureModifier(
+                                completionMethod: completionMethod,
+                                onTap: { triggerTapImpact() },
+                                onLongPressChanged: { isCharging in
+                                    if isCharging {
+                                        if !self.isCharging { startCharging() }
                                     } else {
-                                        // 長按模式：強制同步觸發拖曳/長按
-                                        DragGesture(minimumDistance: 0)
-                                            .onChanged { _ in
-                                                if !isCharging { startCharging() }
-                                            }
-                                            .onEnded { _ in
-                                                endCharging()
-                                            }
+                                        endCharging()
                                     }
                                 }
-                            )
+                            ))
                     }
                     .frame(width: 200, height: 200)
                     .scaleEffect(visualScale)
@@ -466,16 +453,47 @@ struct FullScreenRitualView: View {
         }
     }
 }
+
+// ==========================================
+// MARK: - 手勢型別動態轉換器 (解決 Group 與編編譯錯誤)
+// ==========================================
+struct DynamicGestureModifier: ViewModifier {
+    let completionMethod: Int
+    let onTap: () -> Void
+    let onLongPressChanged: (Bool) -> Void
+
+    func body(content: Content) -> some View {
+        if completionMethod == 0 {
+            content
+                .simultaneousGesture(
+                    TapGesture()
+                        .onEnded {
+                            onTap()
+                        }
+                )
+        } else {
+            content
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { _ in
+                            onLongPressChanged(true)
+                        }
+                        .onEnded { _ in
+                            onLongPressChanged(false)
+                        }
+                )
+        }
+    }
+}
+
 // ==========================================
 // MARK: - 自動生成專用：Aura 療癒系圖示
 // ==========================================
 struct AuraAppIconView: View {
     var body: some View {
         ZStack {
-            // 1. 深色底：像夜裡安靜的水面
             Color(red: 0.05, green: 0.06, blue: 0.12)
             
-            // 2. 底層的霓虹光暈（擴散的能量）
             Circle()
                 .fill(RadialGradient(
                     colors: [.init(red: 0.0, green: 0.8, blue: 1.0).opacity(0.6), .clear],
@@ -490,9 +508,7 @@ struct AuraAppIconView: View {
                 ))
                 .offset(x: 150, y: 180)
 
-            // 3. 核心：一滴玻璃水珠 (Liquid Glass)
             ZStack {
-                // 水珠主體與折射
                 Circle()
                     .fill(.white.opacity(0.07))
                     .background(
@@ -503,7 +519,6 @@ struct AuraAppIconView: View {
                             ))
                     )
                 
-                // 水珠邊緣的高光
                 Circle()
                     .stroke(
                         LinearGradient(
@@ -513,7 +528,6 @@ struct AuraAppIconView: View {
                         lineWidth: 8
                     )
                 
-                // 頂部核心反光（被光喚醒的瞬間）
                 Ellipse()
                     .fill(.white.opacity(0.6))
                     .frame(width: 160, height: 90)
@@ -521,7 +535,6 @@ struct AuraAppIconView: View {
                     .offset(x: -120, y: -150)
                     .blur(radius: 2)
                 
-                // 底部環境折射光
                 Circle()
                     .fill(Color(red: 0.8, green: 0.3, blue: 0.9).opacity(0.45))
                     .frame(width: 220, height: 220)
@@ -531,6 +544,6 @@ struct AuraAppIconView: View {
             .frame(width: 600, height: 600)
             .shadow(color: .black.opacity(0.6), radius: 60, x: 0, y: 40)
         }
-        .frame(width: 1024, height: 1024) // 嚴格符合 App Store 1024x1024 規格
+        .frame(width: 1024, height: 1024) 
     }
 }
