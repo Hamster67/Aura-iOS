@@ -21,7 +21,7 @@ jobs:
         xcrun metal -c Aura/Shaders/RippleShader.metal -o build/RippleShader.air
         xcrun metallib build/RippleShader.air -o build/default.metallib
     
-    - name: Build Unsigned .app
+    - name: Build Unsigned App
       run: |
         xcodebuild -project Aura.xcodeproj \
           -scheme Aura \
@@ -35,10 +35,45 @@ jobs:
           ONLY_ACTIVE_ARCH=NO \
           build
     
+    - name: Verify Build Output
+      run: |
+        echo "Checking build output..."
+        ls -la build/derived/Build/Products/Release-iphoneos/
+        # 確認 Aura.app 存在
+        test -d build/derived/Build/Products/Release-iphoneos/Aura.app || exit 1
+        # 確認 AuraWidgets.appex 存在
+        test -d build/derived/Build/Products/Release-iphoneos/AuraWidgets.appex || echo "Warning: Widget not found"
+    
     - name: Create Payload Folder
       run: |
         mkdir -p build/Payload
         cp -R build/derived/Build/Products/Release-iphoneos/Aura.app build/Payload/
+        
+        # 複製 Widget Extension
+        if [ -d "build/derived/Build/Products/Release-iphoneos/AuraWidgets.appex" ]; then
+          mkdir -p build/Payload/Aura.app/PlugIns
+          cp -R build/derived/Build/Products/Release-iphoneos/AuraWidgets.appex build/Payload/Aura.app/PlugIns/
+        fi
+        
+        # 複製 Metal Shader
+        if [ -f "build/default.metallib" ]; then
+          cp build/default.metallib build/Payload/Aura.app/
+        fi
+        
+        # 複製 Frameworks（如果有）
+        if [ -d "build/derived/Build/Products/Release-iphoneos/Frameworks" ]; then
+          cp -R build/derived/Build/Products/Release-iphoneos/Frameworks build/Payload/Aura.app/
+        fi
+    
+    - name: Verify Payload Structure
+      run: |
+        echo "Verifying Payload structure..."
+        ls -la build/Payload/
+        ls -la build/Payload/Aura.app/
+        # 確認 Info.plist 存在
+        test -f build/Payload/Aura.app/Info.plist || exit 1
+        # 確認可執行檔存在
+        test -f build/Payload/Aura.app/Aura || exit 1
     
     - name: Zip to IPA
       run: |
