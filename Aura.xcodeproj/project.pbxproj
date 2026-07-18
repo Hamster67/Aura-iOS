@@ -66,7 +66,7 @@
  G003 = {isa = PBXGroup; name = Frameworks; sourceTree = "<group>"; children = (); };
 /* End PBXGroup section */
 /* Begin PBXNativeTarget section */
- T001 = {isa = PBXNativeTarget; buildConfigurationList = C001; buildPhases = (B001,B002,); buildRules = (); dependencies = (); name = Aura; productName = Aura; productReference = P001; productType = "com.apple.product-type.application"; };
+ T001 = {isa = PBXNativeTarget; buildConfigurationList = C001; buildPhases = (B001,B002,B003,); buildRules = (); dependencies = (D001,); name = Aura; productName = Aura; productReference = P001; productType = "com.apple.product-type.application"; };
  T002 = {isa = PBXNativeTarget; buildConfigurationList = C002; buildPhases = (B101,B102,); buildRules = (); dependencies = (); name = AuraWidgets; productName = AuraWidgets; productReference = P002; productType = "com.apple.product-type.app-extension"; };
 /* End PBXNativeTarget section */
 /* Begin PBXProject section */
@@ -81,8 +81,10 @@
  B101 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (W001,W002,W003,W004,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 /* Begin PBXCopyFilesBuildPhase section */
+ B003 = {isa = PBXCopyFilesBuildPhase; buildActionMask = 2147483647; dstPath = ""; dstSubfolderSpec = 13; files = (E001,); name = "Embed Foundation Extensions"; runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXCopyFilesBuildPhase section */
 /* Begin PBXTargetDependency section */
+ D001 = {isa = PBXTargetDependency; target = T002; targetProxy = X001; };
 /* End PBXTargetDependency section */
 /* Begin PBXContainerItemProxy section */
  X001 = {isa = PBXContainerItemProxy; containerPortal = PRJ; proxyType = 1; remoteGlobalIDString = T002; remoteInfo = AuraWidgets; };

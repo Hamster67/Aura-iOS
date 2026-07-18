@@ -6,183 +6,70 @@ on:
   pull_request:
   workflow_dispatch:
 
-# 核心修正：加入寫入權限，允許此 Workflow 建立並推送至 GitHub Releases
-permissions:
-  contents: write
-
 jobs:
   build-and-export:
     runs-on: macos-14
     env:
       PROJECT: Aura.xcodeproj
       SCHEME: Aura
+      ARCHIVE_PATH: ${{ github.workspace }}/build/Aura.xcarchive
+      EXPORT_PATH: ${{ github.workspace }}/build/export
       DERIVED_DATA_PATH: ${{ github.workspace }}/build/DerivedData
+      TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+      HAS_SIGNING: ${{ secrets.BUILD_CERTIFICATE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
-
       - name: Select Xcode 15
         run: sudo xcode-select --switch /Applications/Xcode_15.4.app
-
-      - name: Generate Beautiful Aura App Icon (Direct Path Precision)
-        run: |
-          cat << 'EOF' > generate_icon.swift
-          import SwiftUI
-          import Cocoa
-
-          struct AuraAppIconView: View {
-              var body: some View {
-                  ZStack {
-                      Color(red: 0.05, green: 0.06, blue: 0.12)
-                      
-                      Circle()
-                          .fill(RadialGradient(
-                              colors: [.init(red: 0.0, green: 0.8, blue: 1.0).opacity(0.6), .clear],
-                              center: .center, startRadius: 50, endRadius: 850
-                          ))
-                          .offset(x: -120, y: -120)
-                      
-                      Circle()
-                          .fill(RadialGradient(
-                              colors: [.init(red: 0.9, green: 0.3, blue: 0.9).opacity(0.5), .clear],
-                              center: .center, startRadius: 50, endRadius: 800
-                          ))
-                          .offset(x: 150, y: 180)
-
-                      // 玻璃水珠
-                      ZStack {
-                          Circle()
-                              .fill(.white.opacity(0.07))
-                              .background(
-                                  Circle()
-                                      .fill(LinearGradient(
-                                          colors: [.white.opacity(0.25), .clear, .init(red: 0.0, green: 0.8, blue: 1.0).opacity(0.25)],
-                                          startPoint: .topLeading, endPoint: .bottomTrailing
-                                      ))
-                              )
-                          
-                          Circle()
-                              .stroke(
-                                  LinearGradient(
-                                      colors: [.white.opacity(0.65), .white.opacity(0.1), .init(red: 0.0, green: 0.8, blue: 1.0).opacity(0.4)],
-                                      startPoint: .topLeading, endPoint: .bottomTrailing
-                                  ),
-                                  lineWidth: 8
-                              )
-                          
-                          Ellipse()
-                              .fill(.white.opacity(0.6))
-                              .frame(width: 160, height: 90)
-                              .rotationEffect(.degrees(-30))
-                              .offset(x: -120, y: -150)
-                              .blur(radius: 2)
-                          
-                          Circle()
-                              .fill(Color(red: 0.8, green: 0.3, blue: 0.9).opacity(0.45))
-                              .frame(width: 220, height: 220)
-                              .offset(x: 90, y: 120)
-                              .blur(radius: 40)
-                      }
-                      .frame(width: 600, height: 600)
-                      .shadow(color: .black.opacity(0.6), radius: 60, x: 0, y: 40)
-                  }
-                  .frame(width: 1024, height: 1024)
-              }
-          }
-
-          func saveIcon(view: AuraAppIconView, size: CGFloat, to url: URL) {
-              let hostingView = NSHostingView(rootView: view)
-              hostingView.frame = NSRect(x: 0, y: 0, width: size, height: size)
-              let bitmapRep = hostingView.bitmapImageRepForCachingDisplay(in: hostingView.bounds)!
-              hostingView.cacheDisplay(in: hostingView.bounds, to: bitmapRep)
-              if let pngData = bitmapRep.representation(using: .png, properties: [:]) {
-                  try? pngData.write(to: url)
-              }
-          }
-
-          let fm = FileManager.default
-          let currentDirURL = URL(fileURLWithPath: fm.currentDirectoryPath)
-
-          let targetAssetFolder = currentDirURL
-              .appendingPathComponent("Aura")
-              .appendingPathComponent("Assets.xcassets")
-              .appendingPathComponent("AppIcon.appiconset")
-
-          try? fm.createDirectory(at: targetAssetFolder, withIntermediateDirectories: true, attributes: nil)
-          print("📥 目標圖示庫確認成功: \(targetAssetFolder.path)")
-
-          let iconView = AuraAppIconView()
-
-          saveIcon(view: iconView, size: 1024, to: targetAssetFolder.appendingPathComponent("appstore.png"))
-          saveIcon(view: iconView, size: 180, to: targetAssetFolder.appendingPathComponent("iphone-60@3x.png"))
-          saveIcon(view: iconView, size: 120, to: targetAssetFolder.appendingPathComponent("iphone-60@2x.png"))
-          saveIcon(view: iconView, size: 87, to: targetAssetFolder.appendingPathComponent("iphone-29@3x.png"))
-          saveIcon(view: iconView, size: 58, to: targetAssetFolder.appendingPathComponent("iphone-29@2x.png"))
-          saveIcon(view: iconView, size: 80, to: targetAssetFolder.appendingPathComponent("iphone-40@2x.png"))
-          saveIcon(view: iconView, size: 120, to: targetAssetFolder.appendingPathComponent("iphone-40@3x.png"))
-
-          let jsonContent = """
-          {
-            "images" : [
-              { "size" : "29x29", "idiom" : "iphone", "filename" : "iphone-29@2x.png", "scale" : "2x" },
-              { "size" : "29x29", "idiom" : "iphone", "filename" : "iphone-29@3x.png", "scale" : "3x" },
-              { "size" : "40x40", "idiom" : "iphone", "filename" : "iphone-40@2x.png", "scale" : "2x" },
-              { "size" : "40x40", "idiom" : "iphone", "filename" : "iphone-40@3x.png", "scale" : "3x" },
-              { "size" : "60x60", "idiom" : "iphone", "filename" : "iphone-60@2x.png", "scale" : "2x" },
-              { "size" : "60x60", "idiom" : "iphone", "filename" : "iphone-60@3x.png", "scale" : "3x" },
-              { "size" : "1024x1024", "idiom" : "ios-marketing", "filename" : "appstore.png", "scale" : "1x" }
-            ],
-            "info" : { "version" : 1, "author" : "xcode" }
-          }
-          """
-
-          let jsonURL = targetAssetFolder.appendingPathComponent("Contents.json")
-          try? jsonContent.write(to: jsonURL, atomically: true, encoding: .utf8)
-          print("✅ 成功複寫並綁定該目錄下的 Contents.json")
-          EOF
-          
-          xcrun swift generate_icon.swift
-
-      - name: Build Aura App
-        run: |
-          # 1. 確保全域與系統層級的工作項目數量被限制為 1
-          defaults write com.apple.dt.Xcode IDEBuildOperationMaxNumberOfConcurrentCompileTasks 1
-          
-          # 2. 採用 Whole Module 與標準官方安全旗標，徹底壓制記憶體開銷
-          xcodebuild clean build \
-            -project "$PROJECT" \
-            -scheme "$SCHEME" \
-            -configuration Release \
-            -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
-            -derivedDataPath "$DERIVED_DATA_PATH" \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGN_ENTITLEMENTS="" \
-            SWIFT_COMPILATION_MODE=wholemodule \
-            SWIFT_OPTIMIZATION_LEVEL=-Onone \
-            COMPILER_INDEX_STORE_ENABLE=NO \
-            SWIFT_NUM_THREADS=1 \
-            OTHER_SWIFT_FLAGS="-num-threads 1"
-
-      - name: Package for Sideloadly
+      - name: Verify unsigned Release build
+        run: >-
+          xcodebuild clean build -project "$PROJECT" -scheme "$SCHEME"
+          -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath "$DERIVED_DATA_PATH" CODE_SIGNING_ALLOWED=NO
+          CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" CODE_SIGN_ENTITLEMENTS=""
+      - name: Package unsigned IPA
         run: |
           APP_PATH="$DERIVED_DATA_PATH/Build/Products/Release-iphoneos/Aura.app"
-          mkdir -p build/sideload/Payload
-          cp -R "$APP_PATH" build/sideload/Payload/
-          cd build/sideload
-          zip -qry ../Aura-Sideload.ipa Payload
-
-      - name: Create GitHub Release and Upload IPA
-        uses: softprops/action-gh-release@v2
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+          test -d "$APP_PATH"
+          EXECUTABLE_NAME=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP_PATH/Info.plist")
+          test -f "$APP_PATH/$EXECUTABLE_NAME"
+          mkdir -p build/unsigned/Payload
+          cp -R "$APP_PATH" build/unsigned/Payload/Aura.app
+          (cd build/unsigned && zip -qry ../Aura-unsigned.ipa Payload)
+      - name: Install distribution certificate and provisioning profile
+        if: env.HAS_SIGNING == 'true' && github.event_name != 'pull_request'
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          PROFILE_BASE64: ${{ secrets.PROVISIONING_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/aura-signing.keychain-db"
+          CERTIFICATE_PATH="$RUNNER_TEMP/distribution.p12"
+          PROFILE_PATH="$RUNNER_TEMP/aura.mobileprovision"
+          echo -n "$CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
+          echo -n "$PROFILE_BASE64" | base64 --decode -o "$PROFILE_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/"
+      - name: Archive signed app
+        if: env.HAS_SIGNING == 'true' && github.event_name != 'pull_request'
+        run: >-
+          xcodebuild clean archive -project "$PROJECT" -scheme "$SCHEME"
+          -configuration Release -archivePath "$ARCHIVE_PATH" -derivedDataPath "$DERIVED_DATA_PATH" DEVELOPMENT_TEAM="$TEAM_ID"
+      - name: Export IPA
+        if: env.HAS_SIGNING == 'true' && github.event_name != 'pull_request'
+        run: >-
+          xcodebuild -exportArchive -archivePath "$ARCHIVE_PATH"
+          -exportOptionsPlist exportOptions.plist -exportPath "$EXPORT_PATH"
+      - name: Publish build artifact
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: Aura Build Release v1.0.${{ github.run_number }}
-          body: |
-            Aura iOS 簽名專用自動化建置版本。
-            - 內含霓虹流體玻璃球 App Icon。
-            - 適用於 Sideloadly 或巨魔（TrollStore）等側載工具。
-          draft: false
-          prerelease: false
-          files: build/Aura-Sideload.ipa
+          name: Aura-${{ github.run_number }}
+          path: build
+          if-no-files-found: warn
+          retention-days: 14
