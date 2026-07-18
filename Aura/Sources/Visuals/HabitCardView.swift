@@ -1,103 +1,198 @@
 import SwiftUI
 import SwiftData
 
-/// A glass habit card with a context/tap menu to trigger the sacred charging view.
 struct HabitCardView: View {
-    @Bindable var habit: HabitModel
+    let habit: HabitModel
     let delete: () -> Void
     let onTriggerRitual: () -> Void
-
-    private var tint: Color { Color(auraHex: habit.colorHex) }
+    
+    @State private var isEditing = false
+    @Environment(\.modelContext) private var modelContext
 
     var body: some View {
-        Menu {
-            Button(action: onTriggerRitual) {
-                Label(habit.isComplete ? "再來一次" : "完成任務", systemImage: "bolt.shield.fill")
+        HStack {
+            // 左側：圖示與核心名稱
+            HStack(spacing: 14) {
+                Image(systemName: habit.iconName)
+                    .font(.system(size: 20))
+                    .foregroundStyle(Color(hex: habit.colorHex))
+                    .frame(width: 44, height: 44)
+                    .background(Color(hex: habit.colorHex).opacity(0.12), in: Circle())
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(habit.title)
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                    
+                    Text("進度：\(Int(habit.progress * 100))%")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.4))
+                }
             }
             
-            // ─── 這裡加入了編輯選項 ───
-            Button {
-                NotificationCenter.default.post(name: NSNotification.Name("EditHabit"), object: habit)
+            Spacer()
+            
+            // 右側：操作選單（編輯/刪除）
+            Menu {
+                Button {
+                    isEditing = true
+                } label: {
+                    Label("編輯意圖", systemImage: "pencil")
+                }
+                
+                Button(role: .destructive) {
+                    withAnimation { delete() }
+                } label: {
+                    Label("刪除核心", systemImage: "trash")
+                }
             } label: {
-                Label("編輯任務", systemImage: "pencil")
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .frame(width: 44, height: 44)
+                    .background(.white.opacity(0.05), in: Circle())
             }
-            // ────────────────────────
-
-            Button(role: .destructive, action: delete) {
-                Label("刪除任務", systemImage: "trash")
-            }
-        } label: {
-            // 卡片本體視圖
-            VStack(alignment: .leading, spacing: 18) {
-                HStack(alignment: .top) {
-                    LiquidIcon(symbolName: habit.iconName, tint: tint, progress: habit.progress)
-                    Spacer()
-                    Image(systemName: "ellipsis")
-                        .frame(width: 38, height: 38)
-                        .foregroundStyle(.white.opacity(0.6))
-                }
-
-                Text(habit.title)
-                    .font(.title2.weight(.bold))
-
-                HStack(alignment: .lastTextBaseline) {
-                    Text("\(Int(habit.progress * 100))%")
-                        .font(.system(size: 38, weight: .bold, design: .rounded))
-                    Spacer()
-                    Text(habit.isComplete ? "CHARGED" : "TAP TO ENGAGE")
-                        .font(.caption2.weight(.bold))
-                        .tracking(1.2)
-                        .foregroundStyle(tint)
-                }
-
-                GeometryReader { proxy in
-                    Capsule()
-                        .fill(.white.opacity(0.12))
-                        .overlay(alignment: .leading) {
-                            Capsule()
-                                .fill(LinearGradient(colors: [tint.opacity(0.55), tint, .white], startPoint: .leading, endPoint: .trailing))
-                                .frame(width: proxy.size.width * habit.progress)
-                                .shadow(color: tint, radius: 10)
-                        }
-                }
-                .frame(height: 9)
-            }
-            .padding(22)
-            .background(glassSurface)
-            .contentShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+            // 關鍵修正 1：高優先級手勢給選單按鈕，防止被外層長按/連點手勢攔截
+            .highPriorityGesture(TapGesture())
         }
-        .buttonStyle(.plain) 
-        .simultaneousGesture(
-            TapGesture().onEnded {
-                SoundManager.playClickSound()
-            }
+        .padding(.all, 20)
+        .background(.white.opacity(0.02))
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(.white.opacity(0.08), lineWidth: 1)
         )
-    }
-
-    private var glassSurface: some View {
-        RoundedRectangle(cornerRadius: 30, style: .continuous)
-            .fill(.ultraThinMaterial)
-            .overlay {
-                RoundedRectangle(cornerRadius: 30, style: .continuous)
-                    .stroke(tint.opacity(habit.isComplete ? 0.9 : 0.38), lineWidth: habit.isComplete ? 1.5 : 1)
-            }
-            .shadow(color: tint.opacity(habit.isComplete ? 0.48 : 0.16), radius: habit.isComplete ? 25 : 12)
+        // 點擊卡片其餘空白處觸發儀式
+        .onTapGesture {
+            onTriggerRitual()
+        }
+        // 彈出編輯視窗
+        .sheet(isPresented: $isEditing) {
+            EditHabitSheet(habit: habit)
+        }
     }
 }
 
-private struct LiquidIcon: View {
-    let symbolName: String
-    let tint: Color
-    let progress: Double
+/// 獨立的編輯意圖視窗
+struct EditHabitSheet: View {
+    @Bindable var habit: HabitModel
+    @Environment(\.dismiss) private var dismiss
+    
+    let neonColors = ["#00F2FE", "#F355DA", "#FF5E62", "#1ADF66", "#FFD200"]
+    let icons = ["bolt.shield", "sparkles", "brain.headlight", "heart.text.square", "moon.stars"]
 
     var body: some View {
-        Image(systemName: symbolName)
-            .symbolRenderingMode(.hierarchical)
-            .font(.system(size: 28, weight: .medium))
-            .foregroundStyle(.white, tint)
-            .frame(width: 58, height: 58)
-            .background(tint.opacity(0.16 + progress * 0.28), in: Circle())
-            .overlay(Circle().stroke(.white.opacity(0.35)))
-            .shadow(color: tint.opacity(progress), radius: 12)
+        NavigationStack {
+            ZStack {
+                LinearGradient(
+                    colors: [Color(hex: "#0B0D17"), Color(hex: "#16192B")],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+                
+                VStack(spacing: 24) {
+                    Capsule()
+                        .fill(.white.opacity(0.15))
+                        .frame(width: 40, height: 4)
+                        .padding(.top, 12)
+                    
+                    Text("修正意圖核心")
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 24)
+                    
+                    // 輸入框
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("意圖名稱")
+                            .font(.system(size: 12, weight: .semibold)).tracking(1.2)
+                            .foregroundStyle(.white.opacity(0.4))
+                        
+                        TextField("輸入新名稱...", text: $habit.title)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(.white)
+                            .tint(Color(hex: habit.colorHex))
+                    }
+                    .padding(.all, 20)
+                    .background(.white.opacity(0.03))
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .stroke(Color(hex: habit.colorHex).opacity(0.2), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 24)
+                    
+                    // 圖示
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("變更標誌")
+                            .font(.system(size: 12, weight: .semibold)).tracking(1.2)
+                            .foregroundStyle(.white.opacity(0.4))
+                        
+                        HStack(spacing: 16) {
+                            ForEach(icons, id: \.self) { icon in
+                                Button {
+                                    habit.iconName = icon
+                                } label: {
+                                    Image(systemName: icon)
+                                        .font(.system(size: 20, weight: .medium))
+                                        .foregroundStyle(habit.iconName == icon ? Color(hex: habit.colorHex) : .white.opacity(0.4))
+                                        .frame(width: 46, height: 46)
+                                        .background(habit.iconName == icon ? Color(hex: habit.colorHex).opacity(0.15) : Color.white.opacity(0.05))
+                                        .clipShape(Circle())
+                                }
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    
+                    // 顏色
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("調整色彩")
+                            .font(.system(size: 12, weight: .semibold)).tracking(1.2)
+                            .foregroundStyle(.white.opacity(0.4))
+                        
+                        HStack(spacing: 18) {
+                            ForEach(neonColors, id: \.self) { hex in
+                                Button {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                        habit.colorHex = hex
+                                    }
+                                } label: {
+                                    Circle()
+                                        .fill(Color(hex: hex))
+                                        .frame(width: 38, height: 38)
+                                        .overlay(
+                                            Circle()
+                                                .stroke(.white, lineWidth: habit.colorHex == hex ? 2 : 0)
+                                                .scaleEffect(habit.colorHex == hex ? 1.15 : 1.0)
+                                        )
+                                }
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    
+                    Spacer()
+                    
+                    Button {
+                        dismiss()
+                    } label: {
+                        Text("儲存核心變更")
+                            .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.black)
+                            .frame(maxWidth: .infinity, minHeight: 56)
+                            .background(Color(hex: habit.colorHex))
+                            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 24)
+                }
+            }
+        }
     }
 }
