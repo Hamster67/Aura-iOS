@@ -162,7 +162,7 @@ jobs:
             SWIFT_OPTIMIZATION_LEVEL=-Onone \
             COMPILER_INDEX_STORE_ENABLE=NO \
             SWIFT_NUM_THREADS=1 \
-            OTHER_SWIFT_FLAGS="-j1 -Xfrontend -serialize-debugging-options"
+            OTHER_SWIFT_FLAGS="-j1 -disable-batch-mode -Xfrontend -serialize-debugging-options"
 
       - name: Package for Sideloadly
         run: |
