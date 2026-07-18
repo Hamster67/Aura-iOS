@@ -31,8 +31,8 @@ struct RitualCelebrationView: View {
             // 背景自訂切換
             Group {
                 if backgroundStyle == "Glassmorphism" {
-                    Color.clear
-                        .background(.ultraThickMaterial)
+                    // 全螢幕套用自訂模糊背景 (傳入 nil 以利其讀取全域 SharedContainer 內儲存的照片)
+                    BlurredBackgroundView(image: nil)
                 } else {
                     Color.black
                 }
@@ -200,7 +200,6 @@ struct RitualCelebrationView: View {
         let feedback = UISelectionFeedbackGenerator()
         feedback.prepare()
         
-        // 根據目前進度反推已經過的時間，確保中途放開後能精準續傳
         let alreadyPassedTime = progress * chargeDuration
         let startTime = Date.now - alreadyPassedTime 
 
@@ -209,55 +208,55 @@ struct RitualCelebrationView: View {
                 let elapsed = Date.now.timeIntervalSince(startTime)
                 let current = min(1.0, elapsed / chargeDuration)
                 
-                // 1. 精準指派進度，絕不跳格
                 self.progress = current
                 onChargeUpdate(current, true)
                 
-                // 2. 動態呼吸與擴張感加劇
                 withAnimation(.linear(duration: 0.05)) {
                     scale = 1.0 + CGFloat(current * 0.35)
                 }
                 
-                // 3. 觸覺震動：根據進度線性增強強度與頻率，避免突兀卡頓
                 if current < 0.4 {
                     let selectionFeedback = UISelectionFeedbackGenerator()
                     selectionFeedback.selectionChanged()
                 } else {
-                    // 超過 40% 後，隨進度從 0.4 線性增強震動到 1.0 滿格強度
                     let impactFeedback = UIImpactFeedbackGenerator(style: current > 0.8 ? .heavy : .medium)
                     impactFeedback.impactOccurred(intensity: CGFloat(current))
                 }
 
                 if current >= 1.0 {
+                    SoundManager.playSuccessSound() // 100% 滿格原生成功音效
                     triggerCelebration()
                     return
                 }
                 
-                // 4. 固定高頻率刷新率（約 60 FPS），確保 85% 到 100% 的文字與動畫極致線性
                 try? await Task.sleep(nanoseconds: 16_666_667)
             }
         }
     }
 
-    // 連點累積進度（越點震動越強烈）
+    // 連點累積進度
     private func triggerTripleTapProgress() {
         guard tapCount < 3 else { return }
         tapCount += 1
         isInteracting = true
         
-        // 核心：1點輕、2點中、3點重擊，隨次數完美疊加強度
+        // 每點一下除了震動，同步播送點擊音效
+        SoundManager.playClickSound()
+        
         let hapticStyle: UIImpactFeedbackGenerator.FeedbackStyle = tapCount == 1 ? .light : (tapCount == 2 ? .medium : .heavy)
         let feedback = UIImpactFeedbackGenerator(style: hapticStyle)
         feedback.impactOccurred(intensity: CGFloat(Double(tapCount) / 3.0))
 
         withAnimation(.spring(response: 0.15, dampingFraction: 0.35)) {
-            scale = 1.0 + CGFloat(tapCount) * 0.22 // 每一下都擴得更大
+            scale = 1.0 + CGFloat(tapCount) * 0.22 
             progress = Double(tapCount) / 3.0
         }
         
         onChargeUpdate(progress, true)
 
         if tapCount == 3 {
+            // 三連擊完滿，播放大成功音效
+            SoundManager.playSuccessSound()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                 triggerCelebration()
             }

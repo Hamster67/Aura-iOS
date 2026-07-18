@@ -5,13 +5,25 @@ enum SharedContainer {
     static let appGroupIdentifier = "group.com.aura.liquidglass"
     static let cloudKitContainerIdentifier = "iCloud.com.aura.liquidglass"
 
+    // 用於持久化儲存自訂背景照片的資料鍵值
+    private static let customBackgroundKey = "aura_custom_background_data"
+
+    /// 讀取目前儲存的自訂背景相片
+    static var customBackgroundData: Data? {
+        get {
+            UserDefaults.standard.data(forKey: customBackgroundKey)
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: customBackgroundKey)
+        }
+    }
+
     static let shared: ModelContainer = {
         let schema = Schema([HabitModel.self])
 
         let configuration: ModelConfiguration
         if let appGroupURL = FileManager.default
             .containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier) {
-            // Full production build: App Group storage and private CloudKit sync.
             configuration = ModelConfiguration(
                 "Aura",
                 schema: schema,
@@ -19,9 +31,6 @@ enum SharedContainer {
                 cloudKitDatabase: .private(cloudKitContainerIdentifier)
             )
         } else {
-            // Free Apple ID / sideloaded builds cannot receive App Group or
-            // CloudKit entitlements. Keep the app usable with an isolated,
-            // on-device store instead of crashing at launch.
             configuration = ModelConfiguration(
                 "AuraLocal",
                 schema: schema,

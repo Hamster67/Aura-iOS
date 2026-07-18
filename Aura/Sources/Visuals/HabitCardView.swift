@@ -57,7 +57,13 @@ struct HabitCardView: View {
             .background(glassSurface)
             .contentShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
         }
-        .buttonStyle(.plain) // 移除 Menu 預設的按鈕高亮行為
+        .buttonStyle(.plain) 
+        // 使用同步手勢攔截點擊，不破壞原先 Menu 彈出邏輯，同時播放點擊音效
+        .simultaneousGesture(
+            TapGesture().onEnded {
+                SoundManager.playClickSound()
+            }
+        )
     }
 
     private var glassSurface: some View {
