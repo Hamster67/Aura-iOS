@@ -25,56 +25,22 @@ jobs:
       - name: Select Xcode 15
         run: sudo xcode-select --switch /Applications/Xcode_15.4.app
 
-      - name: Inject App Icon Into Project Assets
+      - name: Force Inject App Icon to App Bundle
         run: |
-          # 1. 定義你目前存放圖片的特殊路徑，以及專案內真正的 Assets 標準路徑
-          SOURCE_ICON="${{ github.workspace }}/Aura-iOS/Aura.xcodeproj/AppIcon.appiconset/AppIcon.png"
-          TARGET_ASSETS_DIR="${{ github.workspace }}/Aura-iOS/Aura/Assets.xcassets/AppIcon.appiconset"
+          # 1. 找到編譯出的 .app 目錄
+          APP_DIR=$(find "$DERIVED_DATA_PATH" -name "Aura.app" | head -n 1)
           
-          # 如果專案根目錄沒有 Aura-iOS 前綴，嘗試修正路徑
-          if [ ! -f "$SOURCE_ICON" ] && [ -d "Aura.xcodeproj" ]; then
-            SOURCE_ICON="${{ github.workspace }}/Aura.xcodeproj/AppIcon.appiconset/AppIcon.png"
-            TARGET_ASSETS_DIR="${{ github.workspace }}/Aura/Assets.xcassets/AppIcon.appiconset"
-          fi
+          # 2. 複製你的圖片到 App 根目錄，並命名為 Icon.png
+          SOURCE_ICON="Aura-iOS/Aura.xcodeproj/AppIcon.appiconset/AppIcon.png"
+          cp "$SOURCE_ICON" "$APP_DIR/Icon.png"
           
-          echo "正在建立標準資產目錄: $TARGET_ASSETS_DIR"
-          mkdir -p "$TARGET_ASSETS_DIR"
+          # 3. 強制修改 Info.plist，將圖示指名為 Icon.png
+          # 這會繞過系統對 .car 檔案的依賴，直接讀取 PNG
+          /usr/libexec/PlistBuddy -c "Add :CFBundleIconFiles array" "$APP_DIR/Info.plist" || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleIconFiles:0 string Icon.png" "$APP_DIR/Info.plist" || true
           
-          # 2. 複製並使用 sips 強制生成所有 iOS 設備標準規格圖檔
-          if [ -f "$SOURCE_ICON" ]; then
-            echo "✅ 成功讀取 .xcodeproj 內部的 AppIcon.png"
-            cp "$SOURCE_ICON" "$TARGET_ASSETS_DIR/icon_1024.png"
-          else
-            echo "⚠️ 未能找到 $SOURCE_ICON，改用網路預設圖佔位..."
-            curl -sS "https://picsum.photos/1024" -o "$TARGET_ASSETS_DIR/icon_1024.png"
-          fi
-          
-          sips -z 40 40   "$TARGET_ASSETS_DIR/icon_1024.png" --out "$TARGET_ASSETS_DIR/icon_20x20_2x.png"
-          sips -z 60 60   "$TARGET_ASSETS_DIR/icon_1024.png" --out "$TARGET_ASSETS_DIR/icon_20x20_3x.png"
-          sips -z 58 58   "$TARGET_ASSETS_DIR/icon_1024.png" --out "$TARGET_ASSETS_DIR/icon_29x29_2x.png"
-          sips -z 87 87   "$TARGET_ASSETS_DIR/icon_1024.png" --out "$TARGET_ASSETS_DIR/icon_29x29_3x.png"
-          sips -z 80 80   "$TARGET_ASSETS_DIR/icon_1024.png" --out "$TARGET_ASSETS_DIR/icon_40x40_2x.png"
-          sips -z 120 120 "$TARGET_ASSETS_DIR/icon_1024.png" --out "$TARGET_ASSETS_DIR/icon_40x40_3x.png"
-          sips -z 120 120 "$TARGET_ASSETS_DIR/icon_1024.png" --out "$TARGET_ASSETS_DIR/icon_60x60_2x.png"
-          sips -z 180 180 "$TARGET_ASSETS_DIR/icon_1024.png" --out "$TARGET_ASSETS_DIR/icon_60x60_3x.png"
-          
-          # 3. 寫入 Xcode 編譯必備的資產配置表 (Contents.json)
-          cat << 'EOF' > "$TARGET_ASSETS_DIR/Contents.json"
-          {
-            "images" : [
-              { "size" : "20x20", "idiom" : "iphone", "filename" : "icon_20x20_2x.png", "scale" : "2x" },
-              { "size" : "20x20", "idiom" : "iphone", "filename" : "icon_20x20_3x.png", "scale" : "3x" },
-              { "size" : "29x29", "idiom" : "iphone", "filename" : "icon_29x29_2x.png", "scale" : "2x" },
-              { "size" : "29x29", "idiom" : "iphone", "filename" : "icon_29x29_3x.png", "scale" : "3x" },
-              { "size" : "40x40", "idiom" : "iphone", "filename" : "icon_40x40_2x.png", "scale" : "2x" },
-              { "size" : "40x40", "idiom" : "iphone", "filename" : "icon_40x40_3x.png", "scale" : "3x" },
-              { "size" : "60x60", "idiom" : "iphone", "filename" : "icon_60x60_2x.png", "scale" : "2x" },
-              { "size" : "60x60", "idiom" : "iphone", "filename" : "icon_60x60_3x.png", "scale" : "3x" },
-              { "size" : "1024x1024", "idiom" : "ios-marketing", "filename" : "icon_1024.png", "scale" : "1x" }
-            ],
-            "info" : { "author" : "xcode", "version" : 1 }
-          }
-          EOF
+          # 確保圖示設定不會衝突
+          /usr/libexec/PlistBuddy -c "Delete :CFBundleIconName" "$APP_DIR/Info.plist" || true
 
       - name: Verify unsigned Release build
         run: >-
