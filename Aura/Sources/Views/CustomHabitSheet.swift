@@ -1,127 +1,150 @@
 import SwiftUI
 import SwiftData
 
-/// The creation sheet is deliberately self-contained: it owns temporary UI state
-/// and commits exactly one SwiftData model only when the user taps Create.
 struct CustomHabitSheet: View {
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    
     @State private var title = ""
-    @State private var selectedColor = "47D7FF"
-    @State private var selectedIcon: LiquidIconKind = .water
-    @State private var target = 1.0
-    private let palette = ["47D7FF", "A88BFF", "FF6FAE", "FFB75D", "65F2B5"]
+    // 預設霓虹色：青色、粉紫、橘紅、螢光綠、鮮黃
+    @State private var selectedColorHex = "#00F2FE" 
+    
+    let neonColors = ["#00F2FE", "#F355DA", "#FF5E62", "#1ADF66", "#FFD200"]
+    let colorNames = ["冰晶青", "霓虹粉", "烈焰紅", "極光綠", "曜石黃"]
 
     var body: some View {
         NavigationStack {
             ZStack {
-                BlurredBackgroundView(image: nil).opacity(0.94)
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 26) {
-                        Text("創建任務").font(.system(size: 34, weight: .bold, design: .rounded))
-                        TextField("今天要做什麼事呢?", text: $title)
-                            .textInputAutocapitalization(.sentences)
-                            .padding(17).background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-
-                        sectionTitle("顏色")
-                        HStack(spacing: 15) {
-                            ForEach(palette, id: \.self) { hex in
-                                FluidColorOrb(hex: hex, isSelected: selectedColor == hex) {
-                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.55)) { selectedColor = hex }
+                // 深色極簡背景，帶有微弱的漸層
+                LinearGradient(
+                    colors: [Color(hex: "#0B0D17"), Color(hex: "#16192B")],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+                
+                VStack(spacing: 28) {
+                    // 頂部裝飾條
+                    Capsule()
+                        .fill(.white.opacity(0.15))
+                        .frame(width: 40, height: 4)
+                        .padding(.top, 12)
+                    
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("設定新的意圖")
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                        Text("為你的日常儀式注入能量核心")
+                            .font(.system(size: 14))
+                            .foregroundStyle(.white.opacity(0.5))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    
+                    // 輸入框卡片 - 採用極簡磨砂玻璃
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("意圖名稱")
+                            .font(.system(size: 12, weight: .semibold)).tracking(1.2)
+                            .foregroundStyle(.white.opacity(0.4))
+                        
+                        TextField("例如：晨間冥想、閱讀、深呼吸...", text: $title)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(.white)
+                            .tint(Color(hex: selectedColorHex))
+                    }
+                    .padding(.all, 20)
+                    .background(.white.opacity(0.03))
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .stroke(Color(hex: selectedColorHex).opacity(0.2), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 24)
+                    
+                    // 霓虹色彩選取區
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("能量色彩")
+                            .font(.system(size: 12, weight: .semibold)).tracking(1.2)
+                            .foregroundStyle(.white.opacity(0.4))
+                        
+                        HStack(spacing: 18) {
+                            ForEach(0..<neonColors.count, id: \.self) { index in
+                                let hex = neonColors[index]
+                                Button {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                        selectedColorHex = hex
+                                    }
+                                } label: {
+                                    Circle()
+                                        .fill(Color(hex: hex))
+                                        .frame(width: 38, height: 38)
+                                        .shadow(color: Color(hex: hex).opacity(selectedColorHex == hex ? 0.6 : 0), radius: 10)
+                                        .overlay(
+                                            Circle()
+                                                .stroke(.white, lineWidth: selectedColorHex == hex ? 2 : 0)
+                                                .scaleEffect(selectedColorHex == hex ? 1.15 : 1.0)
+                                        )
                                 }
                             }
                         }
-
-                        sectionTitle("任務圖示")
-                        HStack(spacing: 16) {
-                            ForEach(LiquidIconKind.allCases) { kind in
-                                Button {
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.68)) { selectedIcon = kind }
-                                } label: {
-                                    LiquidIconPainter(kind: kind, color: Color(auraHex: selectedColor))
-                                        .frame(width: 47, height: 47)
-                                        .padding(9)
-                                        .background(selectedIcon == kind ? Color(auraHex: selectedColor).opacity(0.22) : .white.opacity(0.07), in: Circle())
-                                }.buttonStyle(.plain)
-                            }
-                        }
-
-                        sectionTitle("每日意圖 · \(Int(target))")
-                        FluidSlider(value: $target, range: 1...20, tint: Color(auraHex: selectedColor))
-                            .frame(height: 54)
                     }
-                    .padding(24)
-                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    
+                    Spacer()
+                    
+                    // 建立按鈕
+                    Button {
+                        guard !title.isEmpty else { return }
+                        let newHabit = HabitModel(title: title, colorHex: selectedColorHex)
+                        modelContext.insert(newHabit)
+                        dismiss()
+                    } label: {
+                        Text("開啟意圖核心")
+                            .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.black)
+                            .frame(maxWidth: .infinity, minHeight: 56)
+                            .background(
+                                Color(hex: selectedColorHex)
+                                    .shadow(color: Color(hex: selectedColorHex).opacity(0.4), radius: 20, y: 5)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                    }
+                    .disabled(title.isEmpty)
+                    .opacity(title.isEmpty ? 0.4 : 1.0)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 24)
                 }
             }
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("取消", action: dismiss.callAsFunction) }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("創建任務", action: create)
-                        .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
+            .navigationBarHidden(true)
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-        .presentationBackground(.clear)
-    }
-
-    private func sectionTitle(_ value: String) -> some View { Text(value).font(.headline.weight(.semibold)) }
-    private func create() {
-        modelContext.insert(HabitModel(title: title.trimmingCharacters(in: .whitespacesAndNewlines), colorHex: selectedColor, iconName: selectedIcon.systemFallback))
-        dismiss()
     }
 }
 
-private struct FluidColorOrb: View {
-    let hex: String
-    let isSelected: Bool
-    let select: () -> Void
-    @State private var isPressed = false
-    private var color: Color { Color(auraHex: hex) }
-
-    var body: some View {
-        Button(action: select) {
-            Circle()
-                .fill(RadialGradient(colors: [.white.opacity(0.9), color, color.opacity(0.45)], center: .topLeading, startRadius: 1, endRadius: 24))
-                .frame(width: 42, height: 42)
-                .overlay(Circle().stroke(.white.opacity(isSelected ? 0.9 : 0.28), lineWidth: isSelected ? 2.5 : 1))
-                .scaleEffect(isPressed ? 0.8 : (isSelected ? 1.13 : 1))
-                .shadow(color: color.opacity(0.8), radius: isSelected ? 14 : 5)
+// 方便 Color 直接讀取 Hex 的擴充
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3: // RGB (12-bit)
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6: // RGB (24-bit)
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8: // ARGB (32-bit)
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (1, 1, 1, 1)
         }
-        .buttonStyle(.plain)
-        .simultaneousGesture(DragGesture(minimumDistance: 0).onChanged { _ in isPressed = true }.onEnded { _ in withAnimation(.spring(response: 0.38, dampingFraction: 0.42)) { isPressed = false } })
-    }
-}
-
-/// Thumb scale and trailing capsule respond separately, creating a small water-drop inertia illusion.
-private struct FluidSlider: View {
-    @Binding var value: Double
-    let range: ClosedRange<Double>
-    let tint: Color
-    @State private var dragging = false
-    @State private var dragOffset: CGFloat = 0
-
-    var body: some View {
-        GeometryReader { proxy in
-            let width = max(1, proxy.size.width - 30)
-            let fraction = (value - range.lowerBound) / (range.upperBound - range.lowerBound)
-            let x = CGFloat(fraction) * width + 15
-            ZStack(alignment: .leading) {
-                Capsule().fill(.white.opacity(0.12)).frame(height: 10)
-                Capsule().fill(LinearGradient(colors: [tint.opacity(0.45), tint, .white], startPoint: .leading, endPoint: .trailing))
-                    .frame(width: max(10, x), height: 10).shadow(color: tint, radius: 7)
-                Capsule().fill(tint.opacity(0.55)).frame(width: dragging ? 42 + abs(dragOffset) * 0.12 : 20, height: 12).offset(x: min(max(0, x - 10), width - 10) - (dragging && dragOffset < 0 ? 20 : 0)).blur(radius: 2)
-                Circle().fill(RadialGradient(colors: [.white, tint], center: .topLeading, startRadius: 1, endRadius: 15)).frame(width: 30, height: 30).scaleEffect(dragging ? 1.14 : 1).offset(x: x - 15).shadow(color: tint, radius: 9)
-            }
-            .frame(height: proxy.size.height)
-            .contentShape(Rectangle())
-            .gesture(DragGesture(minimumDistance: 0).onChanged { gesture in
-                dragging = true; dragOffset = gesture.translation.width
-                let f = min(1, max(0, gesture.location.x / width))
-                value = (range.lowerBound + f * (range.upperBound - range.lowerBound)).rounded()
-            }.onEnded { _ in withAnimation(.spring(response: 0.45, dampingFraction: 0.58)) { dragging = false; dragOffset = 0 } })
-        }
+        self.init(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue:  Double(b) / 255,
+            opacity: Double(a) / 255
+        )
     }
 }
