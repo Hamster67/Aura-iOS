@@ -32,7 +32,7 @@ struct RitualCelebrationView: View {
             Group {
                 if backgroundStyle == "Glassmorphism" {
                     Color.clear
-                        .background(Material.ultraDarkMaterial)
+                        .background(.ultraThickMaterial)
                 } else {
                     Color.black
                 }
