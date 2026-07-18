@@ -25,47 +25,26 @@ jobs:
       - name: Select Xcode 15
         run: sudo xcode-select --switch /Applications/Xcode_15.4.app
 
-      - name: Force Inject App Icon to App Bundle
-        run: |
-          # 1. 動態尋找編譯產出的 .app 資料夾
-          APP_PATH=$(find ./build/DerivedData -name "Aura.app" -type d | head -n 1)
-          
-          # 2. 修正圖示搜尋路徑
-          ICON_PATH=$(find . -name "AppIcon.png" | grep "AppIcon.appiconset" | head -n 1)
-          
-          echo "Debug: APP_PATH = $APP_PATH"
-          echo "Debug: ICON_PATH = $ICON_PATH"
-          
-          if [ -d "$APP_PATH" ] && [ -f "$ICON_PATH" ]; then
-            cp "$ICON_PATH" "$APP_PATH/Icon.png"
-            # 修改 Info.plist
-            /usr/libexec/PlistBuddy -c "Delete :CFBundleIconFiles" "$APP_PATH/Info.plist" 2>/dev/null || true
-            /usr/libexec/PlistBuddy -c "Add :CFBundleIconFiles array" "$APP_PATH/Info.plist"
-            /usr/libexec/PlistBuddy -c "Add :CFBundleIconFiles:0 string Icon.png" "$APP_PATH/Info.plist"
-          else
-            echo "❌ 無法找到檔案，跳過注入。請檢查編譯是否成功。"
-            exit 1
-          fi
-
       - name: Verify and Debug Build
         run: |
-          echo "--- 當前路徑內容 ---"
-          ls -R
-          
-          echo "--- 開始執行編譯 ---"
-          # 使用完整的絕對路徑來確保編譯器能找到專案
+          # 執行編譯
           xcodebuild build -project "Aura-iOS/Aura.xcodeproj" -scheme "Aura" -configuration Release \
           -sdk iphoneos -destination 'generic/platform=iOS' \
           -derivedDataPath "$(pwd)/build/DerivedData" \
           CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
           ASSETCATALOG_COMPILER_APPICON_NAME=AppIcon
+
+      - name: Force Inject App Icon to App Bundle
+        run: |
+          # 編譯完成後再尋找檔案
+          APP_PATH=$(find "$(pwd)/build/DerivedData" -name "Aura.app" -type d | head -n 1)
+          ICON_PATH=$(find . -name "AppIcon.png" | grep "AppIcon.appiconset" | head -n 1)
           
-          # 檢查編譯結果
-          if [ -d "$(pwd)/build/DerivedData" ]; then
-            echo "✅ 編譯目錄已建立"
-            find "$(pwd)/build/DerivedData" -name "Aura.app"
+          if [ -d "$APP_PATH" ] && [ -f "$ICON_PATH" ]; then
+            cp "$ICON_PATH" "$APP_PATH/Icon.png"
+            # 注入邏輯...[cite: 2]
           else
-            echo "❌ 編譯目錄仍未建立，請檢查上方錯誤訊息"
+            echo "❌ 找不到檔案，請確認編譯是否成功。"
             exit 1
           fi
 
