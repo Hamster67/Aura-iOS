@@ -465,24 +465,21 @@ struct DynamicGestureModifier: Gesture {
     let onTap: () -> Void
     let onLongPressChanged: (Bool) -> Void
 
+    @GestureBuilder // 👈 這裡啟用了原生手勢構建器，Swift 會在內部自動生成一致的抽象型態，徹底杜絕編譯器不匹配報錯
     var body: some Gesture {
         if completionMethod == 0 {
-            return AnyGesture(
-                TapGesture()
-                    .onEnded {
-                        onTap()
-                    }
-            ).map { _ in () } // 👈 抹除泛型關聯型別為 Void
+            TapGesture()
+                .onEnded {
+                    onTap()
+                }
         } else {
-            return AnyGesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { _ in
-                        onLongPressChanged(true)
-                    }
-                    .onEnded { _ in
-                        onLongPressChanged(false)
-                    }
-            ).map { _ in () } // 👈 抹除泛型關聯型別為 Void
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    onLongPressChanged(true)
+                }
+                .onEnded { _ in
+                    onLongPressChanged(false)
+                }
         }
     }
 }
