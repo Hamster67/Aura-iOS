@@ -9,6 +9,9 @@ on:
 jobs:
   build-and-export:
     runs-on: macos-14
+    # 關鍵修正：賦予工作流寫入權限，允許建立 Release 並上傳 IPA
+    permissions:
+      contents: write
     env:
       PROJECT: Aura.xcodeproj
       SCHEME: Aura
@@ -23,7 +26,7 @@ jobs:
       - name: Select Xcode 15
         run: sudo xcode-select --switch /Applications/Xcode_15.4.app
 
-      # 關鍵新增：在編譯前自動動態生成 Assets.xcassets 與 AppIcon
+      # 在編編前自動動態生成 Assets.xcassets 與 AppIcon
       - name: Inject App Icon and Assets
         run: |
           mkdir -p Aura/Assets.xcassets/AppIcon.appiconset
@@ -47,7 +50,6 @@ jobs:
           EOF
           
           # 從網路下載一張 1024x1024 的圖片充當預設 App Icon 核心
-          # (你未來也可以將此網址替換成你固定託管的核心圖示，或是直接用 cp 命令複製專案內的實體圖片)
           curl -sS "https://picsum.photos/1024" -o Aura/Assets.xcassets/AppIcon.appiconset/icon.png
 
       - name: Verify unsigned Release build
@@ -99,7 +101,7 @@ jobs:
           xcodebuild -exportArchive -archivePath "$ARCHIVE_PATH"
           -exportOptionsPlist exportOptions.plist -exportPath "$EXPORT_PATH"
 
-      # 為了統一上傳檔案路徑，將已簽名的 IPA 複製到外層目錄
+      # 複製簽名後的 IPA 到根目錄以便打包上傳
       - name: Prepare Signed IPA For Release
         if: env.HAS_SIGNING == 'true' && github.event_name != 'pull_request'
         run: |
@@ -118,7 +120,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      # 關鍵新增：將 IPA 自動上傳並發佈至 GitHub Releases
+      # 自動上傳並建立 GitHub Release
       - name: Create GitHub Release and Upload IPAs
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: ncipollo/release-action@v1
