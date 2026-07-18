@@ -18,12 +18,12 @@ struct CustomHabitSheet: View {
                 BlurredBackgroundView(image: nil).opacity(0.94)
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 26) {
-                        Text("Create a ritual").font(.system(size: 34, weight: .bold, design: .rounded))
-                        TextField("What will you make space for?", text: $title)
+                        Text("創建任務").font(.system(size: 34, weight: .bold, design: .rounded))
+                        TextField("今天要做什麼呢?", text: $title)
                             .textInputAutocapitalization(.sentences)
                             .padding(17).background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
 
-                        sectionTitle("Liquid colour")
+                        sectionTitle("顏色")
                         HStack(spacing: 15) {
                             ForEach(palette, id: \.self) { hex in
                                 FluidColorOrb(hex: hex, isSelected: selectedColor == hex) {
@@ -32,7 +32,7 @@ struct CustomHabitSheet: View {
                             }
                         }
 
-                        sectionTitle("Ritual glyph")
+                        sectionTitle("任務圖示")
                         HStack(spacing: 16) {
                             ForEach(LiquidIconKind.allCases) { kind in
                                 Button {
@@ -46,7 +46,7 @@ struct CustomHabitSheet: View {
                             }
                         }
 
-                        sectionTitle("Daily intention · \(Int(target))")
+                        sectionTitle("每日意圖 · \(Int(target))")
                         FluidSlider(value: $target, range: 1...20, tint: Color(auraHex: selectedColor))
                             .frame(height: 54)
                     }
@@ -55,9 +55,9 @@ struct CustomHabitSheet: View {
                 }
             }
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: dismiss.callAsFunction) }
+                ToolbarItem(placement: .cancellationAction) { Button("取消", action: dismiss.callAsFunction) }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Create", action: create)
+                    Button("創建任務", action: create)
                         .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
