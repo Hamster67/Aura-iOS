@@ -27,8 +27,17 @@ jobs:
 
       - name: Verify and Debug Build
         run: |
-          # 執行編譯
-          xcodebuild build -project "Aura-iOS/Aura.xcodeproj" -scheme "Aura" -configuration Release \
+          # 1. 強制列出所有 .xcodeproj 檔案以確認正確路徑
+          echo "正在搜尋專案檔位置..."
+          find . -name "*.xcodeproj"
+          
+          # 2. 根據找到的路徑修正執行指令
+          # 假設 find 輸出結果為 ./Aura.xcodeproj，則將專案路徑改為 "Aura.xcodeproj"
+          # 如果輸出為 ./Aura-iOS/Aura.xcodeproj，則保持原本路徑
+          
+          echo "開始編譯..."
+          # 這裡請嘗試使用 ./Aura.xcodeproj 或你從上方 find 指令看到的正確路徑
+          xcodebuild build -project "Aura.xcodeproj" -scheme "Aura" -configuration Release \
           -sdk iphoneos -destination 'generic/platform=iOS' \
           -derivedDataPath "$(pwd)/build/DerivedData" \
           CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
