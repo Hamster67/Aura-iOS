@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import PhotosUI // 引入相簿元件
 
 /// 儀式完成方式設定
 enum CompletionMethod: String, CaseIterable, Identifiable {
@@ -23,9 +24,15 @@ struct ContentView: View {
     
     // 全螢幕儀式狀態管理
     @State private var activeRitualHabit: HabitModel? = nil
+    
+    // 相簿選取器狀態
+    @State private var selectedItem: PhotosPickerItem? = nil
+    @State private var backgroundImage: Image? = nil
+    @AppStorage("hasCustomBackground") private var hasCustomBackground: Bool = false
 
     var body: some View {
-        LiquidCanvasView(backgroundImage: nil) {
+        // 將選取的 backgroundImage 傳入
+        LiquidCanvasView(backgroundImage: backgroundImage) {
             ScrollView(showsIndicators: false) {
                 LazyVStack(alignment: .leading, spacing: 16) {
                     
@@ -47,6 +54,23 @@ struct ContentView: View {
                                         .tag(method)
                                 }
                             }
+                            
+                            Section("頁面外觀") {
+                                PhotosPicker(selection: $selectedItem, matching: .images) {
+                                    Label("更換背景照片", systemImage: "photo.on.rectangle")
+                                }
+                                if hasCustomBackground {
+                                    Button(role: .destructive) {
+                                        backgroundImage = nil
+                                        hasCustomBackground = false
+                                        // 清除本地快取
+                                        let url = getDocumentsDirectory().appendingPathComponent("custom_bg.png")
+                                        try? FileManager.default.removeItem(at: url)
+                                    } label: {
+                                        Label("恢復預設背景", systemImage: "trash")
+                                    }
+                                }
+                            }
                         } label: {
                             Image(systemName: "gearshape.fill")
                                 .font(.system(size: 22))
@@ -64,7 +88,6 @@ struct ContentView: View {
                             habit: habit,
                             delete: { modelContext.delete(habit) },
                             onTriggerRitual: {
-                                // 點選卡片選單中的完成後，開啟全螢幕畫面
                                 activeRitualHabit = habit
                             }
                         )
@@ -87,12 +110,36 @@ struct ContentView: View {
         }
         .foregroundStyle(.white)
         .sheet(isPresented: $isPresentingHabitSheet) { CustomHabitSheet() }
-        // 全螢幕充電與慶祝儀式畫面
         .fullScreenCover(item: $activeRitualHabit) { habit in
             RitualCelebrationView(habit: habit, method: completionMethod) { progress, isCharging in
                 AuraActivityController.shared.update(habitName: habit.title, progress: progress, neonColorHex: habit.colorHex, isCharging: isCharging)
             }
         }
+        // 讀取相簿選取的照片並儲存到本地沙盒
+        .onChange(of: selectedItem) { newItem in
+            Task {
+                if let data = try? await newItem?.loadTransferable(type: Data.self),
+                   let uiImage = UIImage(data: data) {
+                    backgroundImage = Image(uiImage: uiImage)
+                    hasCustomBackground = true
+                    // 儲存到本地，供下次打開時讀取
+                    let url = getDocumentsDirectory().appendingPathComponent("custom_bg.png")
+                    try? data.write(to: url)
+                }
+            }
+        }
+        // App 打開時自動加載之前儲存的背景
+        .onAppear {
+            let url = getDocumentsDirectory().appendingPathComponent("custom_bg.png")
+            if let data = try? Data(contentsOf: url), let uiImage = UIImage(data: data) {
+                backgroundImage = Image(uiImage: uiImage)
+                hasCustomBackground = true
+            }
+        }
+    }
+    
+    private func getDocumentsDirectory() -> URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
     }
 }
 

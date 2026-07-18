@@ -14,6 +14,15 @@ struct HabitCardView: View {
             Button(action: onTriggerRitual) {
                 Label(habit.isComplete ? "再來一次" : "完成任務", systemImage: "bolt.shield.fill")
             }
+            
+            // ─── 這裡加入了編輯選項 ───
+            Button {
+                NotificationCenter.default.post(name: NSNotification.Name("EditHabit"), object: habit)
+            } label: {
+                Label("編輯任務", systemImage: "pencil")
+            }
+            // ────────────────────────
+
             Button(role: .destructive, action: delete) {
                 Label("刪除任務", systemImage: "trash")
             }
@@ -58,7 +67,6 @@ struct HabitCardView: View {
             .contentShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
         }
         .buttonStyle(.plain) 
-        // 使用同步手勢攔截點擊，不破壞原先 Menu 彈出邏輯，同時播放點擊音效
         .simultaneousGesture(
             TapGesture().onEnded {
                 SoundManager.playClickSound()

@@ -12,26 +12,39 @@ struct RitualCelebrationView: View {
     @State private var isInteracting = false
     @State private var chargeTask: Task<Void, Never>?
     @State private var tapCount = 0
-    @State private var scale: CGFloat = 1.0
     @State private var isCelebrating = false
+    
+    // 爆炸漣漪特效控制
+    @State private var explosionScale: CGFloat = 1.0
+    @State private var explosionOpacity: Double = 0.0
+    @State private var hasExploded = false
     
     // 自訂視覺狀態
     @AppStorage("ritualBackgroundStyle") private var backgroundStyle = "PureBlack"
     @AppStorage("ritualGlobalTheme") private var globalTheme = "Neon"
     
-    // 煙火與動態畫面震動
+    // 煙火粒子
     @State private var particleAnimation = false
-    @State private var dynamicHapticIntensity: CGFloat = 1.0
 
     private var tint: Color { Color(auraHex: habit.colorHex) }
     private let chargeDuration: TimeInterval = 3.0
+
+    // 根據進度計算核心縮放：0%->80% 逐漸變大 (1.0->1.35)；80%->100% 快速縮回 (1.35->1.05)
+    private var dynamicScale: CGFloat {
+        if hasExploded { return 0.0 }
+        if progress >= 0.8 {
+            let segment = (progress - 0.8) / 0.2 // 0.0 ~ 1.0
+            return 1.35 - (segment * 0.30)
+        } else {
+            return 1.0 + CGFloat(progress * 0.4375)
+        }
+    }
 
     var body: some View {
         ZStack {
             // 背景自訂切換
             Group {
                 if backgroundStyle == "Glassmorphism" {
-                    // 全螢幕套用自訂模糊背景 (傳入 nil 以利其讀取全域 SharedContainer 內儲存的照片)
                     BlurredBackgroundView(image: nil)
                 } else {
                     Color.black
@@ -39,19 +52,18 @@ struct RitualCelebrationView: View {
             }
             .ignoresSafeArea()
             
-            // 唯美霓虹光暈（全域風格影響）
+            // 唯美霓虹光暈
             Circle()
                 .fill(tint.opacity(globalTheme == "Neon" ? (0.15 + (progress * 0.25)) : 0.05))
                 .frame(width: 400, height: 400)
                 .blur(radius: 60)
                 .offset(y: -50)
-                .scaleEffect(isInteracting ? (1.2 + (progress * 0.1)) : 1.0) // 蓄力越久光暈擴散越大
+                .scaleEffect(isInteracting ? 1.15 : 1.0)
                 .animation(.easeInOut(duration: 0.5), value: isInteracting)
 
             VStack(spacing: 40) {
                 // 頂部功能與設定按鈕列
                 HStack(spacing: 16) {
-                    // 自訂背景與樣式選單
                     Menu {
                         Section("背景樣式") {
                             Button("極致純黑") { backgroundStyle = "PureBlack" }
@@ -92,11 +104,19 @@ struct RitualCelebrationView: View {
 
                 Spacer()
 
-                // 主能量艙（圓環設計）
+                // 主能量艙（圓環與爆炸核心）
                 ZStack {
+                    // 100% 炸開的巨大外擴漣漪
+                    Circle()
+                        .stroke(tint, lineWidth: 4)
+                        .frame(width: 220, height: 220)
+                        .scaleEffect(explosionScale)
+                        .opacity(explosionOpacity)
+                    
                     Circle()
                         .stroke(.white.opacity(0.08), lineWidth: 16)
                         .frame(width: 220, height: 220)
+                        .opacity(hasExploded ? 0 : 1)
                     
                     Circle()
                         .trim(from: 0, to: progress)
@@ -107,42 +127,40 @@ struct RitualCelebrationView: View {
                         .frame(width: 220, height: 220)
                         .rotationEffect(.degrees(-90))
                         .shadow(color: tint.opacity(globalTheme == "Neon" ? 0.8 : 0.2), radius: 15)
-                        .animation(.linear(duration: method == .longPress ? 0.1 : 0.25), value: progress)
+                        .opacity(hasExploded ? 0 : 1)
                     
-                    // 中央圖示與進度（強制白色與 Tint 色，防止深色模式污染變成黑字）
+                    // 中央圖示與進度 (套用移除晃動與 80% 縮回動畫)
                     VStack(spacing: 8) {
                         Image(systemName: habit.iconName)
                             .font(.system(size: 48, weight: .bold))
                             .foregroundStyle(tint)
-                            .scaleEffect(scale)
                         
                         Text("\(Int(progress * 100))%")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundStyle(.white) // 強制白色
+                            .foregroundStyle(.white)
                     }
+                    .scaleEffect(dynamicScale)
                 }
-                // 震動回饋：按越久畫面產生微幅抖動感
-                .offset(x: isInteracting && method == .longPress ? CGFloat.random(in: -progress*3...progress*3) : 0)
                 
                 Text(isCelebrating ? "CELEBRATING!" : (method == .longPress ? "請按住螢幕蓄力" : "請連續點擊卡片 3 下"))
                     .font(.system(.headline, design: .rounded))
                     .tracking(1.5)
-                    .foregroundColor(.white.opacity(0.8)) // 強制白字高透亮
+                    .foregroundColor(.white.opacity(0.8))
 
                 Spacer()
                 
-                // 互動控制區（全螢幕感應玻璃墊）
+                // 互動控制區
                 if !isCelebrating {
                     RoundedRectangle(cornerRadius: 24, style: .continuous)
                         .fill(.white.opacity(0.06))
                         .overlay(
                             Text(method == .longPress ? "HOLD" : "TAP TAP TAP")
                                 .font(.system(.title3, design: .rounded).bold())
-                                .foregroundColor(.white.opacity(0.4)) // 強制淡白字
+                                .foregroundColor(.white.opacity(0.4))
                         )
                         .frame(height: 120)
                         .padding(.horizontal, 40)
-                        .scaleEffect(isInteracting ? (0.95 - (progress * 0.03)) : 1.0) // 越久壓得越深
+                        .scaleEffect(isInteracting ? 0.95 : 1.0)
                         .animation(.interactiveSpring(), value: isInteracting)
                         .gesture(ritualGesture)
                 }
@@ -150,7 +168,7 @@ struct RitualCelebrationView: View {
                 Spacer()
             }
             
-            // 慶祝粒子特效疊加層
+            // 慶祝粒子
             if isCelebrating {
                 ForEach(0..<25, id: \.self) { i in
                     Circle()
@@ -195,10 +213,15 @@ struct RitualCelebrationView: View {
         }
     }
 
-    // 長按蓄力邏輯：已修復 85% 暴衝卡頓，確保 0% - 100% 全程絲滑遞增
+    // 長按蓄力：已將 Haptic 實例移到外部並預先 prepare，徹底解決 85% 掉幀卡頓問題
     private func startLongPressCharging() {
-        let feedback = UISelectionFeedbackGenerator()
-        feedback.prepare()
+        let selectionFeedback = UISelectionFeedbackGenerator()
+        let mediumFeedback = UIImpactFeedbackGenerator(style: .medium)
+        let heavyFeedback = UIImpactFeedbackGenerator(style: .heavy)
+        
+        selectionFeedback.prepare()
+        mediumFeedback.prepare()
+        heavyFeedback.prepare()
         
         let alreadyPassedTime = progress * chargeDuration
         let startTime = Date.now - alreadyPassedTime 
@@ -208,39 +231,37 @@ struct RitualCelebrationView: View {
                 let elapsed = Date.now.timeIntervalSince(startTime)
                 let current = min(1.0, elapsed / chargeDuration)
                 
-                self.progress = current
+                // 使用 linear 讓進度絲滑增加
+                withAnimation(.linear(duration: 0.03)) {
+                    self.progress = current
+                }
                 onChargeUpdate(current, true)
                 
-                withAnimation(.linear(duration: 0.05)) {
-                    scale = 1.0 + CGFloat(current * 0.35)
-                }
-                
+                // 控制震動頻率與強度，不再重複 init
                 if current < 0.4 {
-                    let selectionFeedback = UISelectionFeedbackGenerator()
                     selectionFeedback.selectionChanged()
+                } else if current < 0.8 {
+                    mediumFeedback.impactOccurred(intensity: CGFloat(current))
                 } else {
-                    let impactFeedback = UIImpactFeedbackGenerator(style: current > 0.8 ? .heavy : .medium)
-                    impactFeedback.impactOccurred(intensity: CGFloat(current))
+                    heavyFeedback.impactOccurred(intensity: CGFloat(current))
                 }
 
                 if current >= 1.0 {
-                    SoundManager.playSuccessSound() // 100% 滿格原生成功音效
-                    triggerCelebration()
+                    SoundManager.playSuccessSound()
+                    triggerExplosionEffect()
                     return
                 }
                 
-                try? await Task.sleep(nanoseconds: 16_666_667)
+                try? await Task.sleep(nanoseconds: 30_000_000) // 提高微調休眠時間，減輕 CPU 負擔
             }
         }
     }
 
-    // 連點累積進度
     private func triggerTripleTapProgress() {
         guard tapCount < 3 else { return }
         tapCount += 1
         isInteracting = true
         
-        // 每點一下除了震動，同步播送點擊音效
         SoundManager.playClickSound()
         
         let hapticStyle: UIImpactFeedbackGenerator.FeedbackStyle = tapCount == 1 ? .light : (tapCount == 2 ? .medium : .heavy)
@@ -248,23 +269,15 @@ struct RitualCelebrationView: View {
         feedback.impactOccurred(intensity: CGFloat(Double(tapCount) / 3.0))
 
         withAnimation(.spring(response: 0.15, dampingFraction: 0.35)) {
-            scale = 1.0 + CGFloat(tapCount) * 0.22 
             progress = Double(tapCount) / 3.0
         }
         
         onChargeUpdate(progress, true)
 
         if tapCount == 3 {
-            // 三連擊完滿，播放大成功音效
             SoundManager.playSuccessSound()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                triggerCelebration()
-            }
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            if tapCount < 3 && isInteracting {
-                isInteracting = false
+                triggerExplosionEffect()
             }
         }
     }
@@ -275,27 +288,36 @@ struct RitualCelebrationView: View {
         if progress < 1.0 {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                 progress = 0
-                scale = 1.0
             }
             onChargeUpdate(0, false)
         }
     }
 
-    private func triggerCelebration() {
+    // 100% 滿格爆炸動畫
+    private func triggerExplosionEffect() {
         cleanUp()
-        isCelebrating = true
+        hasExploded = true
+        explosionOpacity = 1.0
         
-        habit.progress = 1.0
-        onChargeUpdate(1.0, false)
-        
-        // 成功時觸發通知型成功大震動
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
-        
-        withAnimation(.easeOut(duration: 1.5)) {
-            particleAnimation = true
+        // 瞬間外擴漣漪炸開
+        withAnimation(.easeOut(duration: 0.5)) {
+            explosionScale = 3.8
+            explosionOpacity = 0.0
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+        // 緊接著開啟粒子大慶祝
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            isCelebrating = true
+            habit.progress = 1.0
+            onChargeUpdate(1.0, false)
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            
+            withAnimation(.easeOut(duration: 1.5)) {
+                particleAnimation = true
+            }
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
             dismiss()
         }
     }
