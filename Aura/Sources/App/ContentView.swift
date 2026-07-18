@@ -6,70 +6,91 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var isPresentingHabitSheet = false
     
-    // 全局互動設定：0 = 點三下完成, 1 = 長按完成
+    // 全局設定：0 = 點三下完成, 1 = 長按完成
     @AppStorage("completionMethod") private var completionMethod = 0 
+    // 背景風格設定：0 = 極光流體, 1 = 深邃宇宙, 2 = 日落微光
+    @AppStorage("backgroundStyle") private var backgroundStyle = 0
     @State private var showSettings = false
     
     // 全螢幕互動艙狀態
     @State private var selectedHabitForRitual: HabitModel? = nil
 
+    // 根據設定選擇背景漸層顏色
+    var backgroundColors: [Color] {
+        switch backgroundStyle {
+        case 1: return [.init(red: 0.05, green: 0.05, blue: 0.15), .init(red: 0.2, green: 0.05, blue: 0.3)] // 深邃宇宙
+        case 2: return [.init(red: 0.95, green: 0.4, blue: 0.4), .init(red: 0.95, green: 0.7, blue: 0.4)] // 日落微光
+        default: return [.init(red: 0.85, green: 0.93, blue: 0.98), .init(red: 0.92, green: 0.88, blue: 0.95)] // 極光流體（預設）
+        }
+    }
+    
+    // 字體顏色適配（深色背景用白色，淺色用黑色）
+    var textColor: Color {
+        backgroundStyle == 1 ? .white : .black
+    }
+
     var body: some View {
         ZStack {
-            // 淺色流體背景
-            LiquidCanvasView(backgroundImage: nil) {
-                ScrollView(showsIndicators: false) {
-                    LazyVStack(alignment: .leading, spacing: 18) {
+            // 自訂流體背景色
+            LinearGradient(colors: backgroundColors, startPoint: .topLeading, endPoint: .bottomTrailing)
+                .ignoresSafeArea()
+                .overlay(
+                    // 這裡與你原本的 LiquidCanvasView 連動，為其注入主題色
+                    LiquidCanvasView(backgroundImage: nil) { Color.clear }
+                        .opacity(0.6)
+                )
+            
+            ScrollView(showsIndicators: false) {
+                LazyVStack(alignment: .leading, spacing: 18) {
+                    
+                    // 標頭與設定
+                    HStack {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("今天，慢慢完成。")
+                                .font(.system(size: 34, weight: .bold, design: .rounded))
+                                .foregroundStyle(textColor)
+                            Text("LET THE DAY FILL WITH LIGHT")
+                                .font(.caption.weight(.semibold)).tracking(1.8)
+                                .foregroundStyle(textColor.opacity(0.5))
+                        }
+                        Spacer()
                         
-                        // 標頭與設定
-                        HStack {
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("今天，慢慢完成。")
-                                    .font(.system(size: 34, weight: .bold, design: .rounded))
-                                Text("LET THE DAY FILL WITH LIGHT")
-                                    .font(.caption.weight(.semibold)).tracking(1.8)
-                                    .foregroundStyle(.black.opacity(0.4))
-                            }
-                            Spacer()
-                            
-                            Button { showSettings = true } label: {
-                                Image(systemName: "gearshape.fill")
-                                    .font(.title2)
-                                    .foregroundStyle(.black.opacity(0.6))
-                            }
-                        }
-                        .padding(.top, 64).padding(.bottom, 8)
-
-                        // 習慣卡片列表
-                        ForEach(habits) { habit in
-                            HabitCardView(
-                                habitName: habit.title,
-                                habitStreak: 0,
-                                habitProgress: habit.progress,
-                                delete: {
-                                    withAnimation { modelContext.delete(habit) }
-                                },
-                                triggerRitual: {
-                                    // 點選完成：將當前任務傳入，開啟全螢幕互動艙
-                                    selectedHabitForRitual = habit
-                                }
-                            )
-                        }
-
-                        if habits.count < 5 {
-                            Button { isPresentingHabitSheet = true } label: {
-                                Image(systemName: "plus")
-                                    .font(.system(size: 28, weight: .medium, design: .rounded))
-                                    .frame(maxWidth: .infinity, minHeight: 94)
-                                    .foregroundStyle(.black.opacity(0.5))
-                                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 30, style: .continuous))
-                                    .overlay(RoundedRectangle(cornerRadius: 30, style: .continuous).stroke(.white.opacity(0.6)))
-                            }.buttonStyle(.plain)
+                        Button { showSettings = true } label: {
+                            Image(systemName: "slider.horizontal.3")
+                                .font(.title2)
+                                .foregroundStyle(textColor.opacity(0.7))
                         }
                     }
-                    .padding(.horizontal, 20).padding(.bottom, 40)
+                    .padding(.top, 64).padding(.bottom, 8)
+
+                    // 習慣卡片列表
+                    ForEach(habits) { habit in
+                        HabitCardView(
+                            habitName: habit.title,
+                            habitStreak: 0,
+                            habitProgress: habit.progress,
+                            delete: {
+                                withAnimation { modelContext.delete(habit) }
+                            },
+                            triggerRitual: {
+                                selectedHabitForRitual = habit
+                            }
+                        )
+                    }
+
+                    if habits.count < 5 {
+                        Button { isPresentingHabitSheet = true } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 28, weight: .medium, design: .rounded))
+                                .frame(maxWidth: .infinity, minHeight: 94)
+                                .foregroundStyle(textColor.opacity(0.5))
+                                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 30, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 30, style: .continuous).stroke(textColor.opacity(0.2)))
+                        }.buttonStyle(.plain)
+                    }
                 }
+                .padding(.horizontal, 20).padding(.bottom, 40)
             }
-            .foregroundStyle(.black)
             
             // 全螢幕互動與慶祝艙層
             if let habit = selectedHabitForRitual {
@@ -77,8 +98,8 @@ struct ContentView: View {
                     habitName: habit.title,
                     completionMethod: completionMethod,
                     initialProgress: habit.progress,
+                    themeColors: backgroundColors,
                     onComplete: { finalProgress in
-                        // 更新 SwiftData
                         habit.progress = finalProgress
                         AuraActivityController.shared.update(
                             habitName: habit.title,
@@ -95,10 +116,19 @@ struct ContentView: View {
                 .zIndex(999)
             }
         }
-        // 設定選單
+        // 控制中心設定選單
         .sheet(isPresented: $showSettings) {
             NavigationStack {
                 Form {
+                    Section("自訂環境氛圍 (Aura)") {
+                        Picker("背景風格", selection: $backgroundStyle) {
+                            Text("✨ 極光流體 (淺色極簡)").tag(0)
+                            Text("🌌 深邃宇宙 (暗黑沉浸)").tag(1)
+                            Text("🌅 日落微光 (溫暖和煦)").tag(2)
+                        }
+                        .pickerStyle(.inline)
+                    }
+                    
                     Section("自訂完成互動方式") {
                         Picker("互動模式", selection: $completionMethod) {
                             Text("連點三下完成（越點越熱烈）").tag(0)
@@ -107,13 +137,89 @@ struct ContentView: View {
                         .pickerStyle(.inline)
                     }
                 }
-                .navigationTitle("Aura 設定")
+                .navigationTitle("Aura 儀式設定")
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbar { Button("完成") { showSettings = false } }
+                .toolbar { Button("儲存") { showSettings = false } }
             }
-            .presentationDetents([.fraction(0.35)])
+            .presentationDetents([.fraction(0.55)])
         }
         .sheet(isPresented: $isPresentingHabitSheet) { CustomHabitSheet() }
+    }
+}
+
+// ==========================================
+// MARK: - 粒子爆炸特效元件 (ParticleEmitter)
+// ==========================================
+struct Particle: Identifiable {
+    let id = UUID()
+    var position: CGPoint
+    var velocity: CGSize
+    var scale: CGFloat
+    var opacity: Double
+    var color: Color
+}
+
+struct ParticleBurstView: View {
+    @Binding var trigger: Bool
+    var burstColor: Color = .purple
+    @State private var particles: [Particle] = []
+    
+    var body: some View {
+        TimelineView(.animation) { timeline in
+            Canvas { context, size in
+                for particle in particles {
+                    context.opacity = particle.opacity
+                    let rect = CGRect(
+                        x: particle.position.x - (10 * particle.scale) / 2,
+                        y: particle.position.y - (10 * particle.scale) / 2,
+                        width: 10 * particle.scale,
+                        height: 10 * particle.scale
+                    )
+                    // 繪製圓形發光星芒粒子
+                    context.fill(Path(ellipseIn: rect), with: .color(particle.color))
+                }
+            }
+            .onChange(of: timeline.date) { _ in
+                updateParticles()
+            }
+        }
+        .onChange(of: trigger) { newValue in
+            if newValue { spawnParticles() }
+        }
+    }
+    
+    private func spawnParticles() {
+        var newParticles: [Particle] = []
+        let colors: [Color] = [burstColor, .blue, .cyan, .white, .orange]
+        
+        // 瞬間產生 40 個向四周噴發的星芒粒子
+        for _ in 0..<40 {
+            let angle = Double.random(in: 0...(2 * .pi))
+            let speed = Double.random(in: 4...12)
+            let velocity = CGSize(width: cos(angle) * speed, height: sin(angle) * speed)
+            
+            newParticles.append(Particle(
+                position: CGPoint(x: UIScreen.main.bounds.width / 2, y: UIScreen.main.bounds.height / 2 - 40),
+                velocity: velocity,
+                scale: CGFloat.random(in: 0.5...1.5),
+                opacity: 1.0,
+                color: colors.randomElement() ?? .purple
+            ))
+        }
+        self.particles = newParticles
+    }
+    
+    private func updateParticles() {
+        for i in 0..<particles.count {
+            particles[i].position.x += particles[i].velocity.width
+            particles[i].position.y += particles[i].velocity.height
+            // 模擬微小的阻力與重力下墜
+            particles[i].velocity.height += 0.15 
+            particles[i].opacity -= 0.02
+            particles[i].scale *= 0.98
+        }
+        // 移除看不見的粒子
+        particles.removeAll { $0.opacity <= 0 }
     }
 }
 
@@ -122,8 +228,9 @@ struct ContentView: View {
 // ==========================================
 struct FullScreenRitualView: View {
     let habitName: String
-    let completionMethod: Int // 0: 點三下, 1: 長按
+    let completionMethod: Int
     let initialProgress: Double
+    let themeColors: [Color] // 繼承主畫面的背景配色
     
     var onComplete: (Double) -> Void
     var onDismiss: () -> Void
@@ -137,17 +244,24 @@ struct FullScreenRitualView: View {
     
     @State private var isCelebrated = false
     @State private var animateGlow = false
+    @State private var triggerParticleBurst = false
 
     var body: some View {
         ZStack {
-            Color.white.ignoresSafeArea()
+            // 背景自動適配主畫面氛圍
+            LinearGradient(colors: themeColors, startPoint: .top, endPoint: .bottom)
+                .ignoresSafeArea()
                 .overlay(
                     Circle()
-                        .fill(RadialGradient(colors: [.blue.opacity(0.3), .purple.opacity(0.4), .clear], center: .center, startRadius: 10, endRadius: 360))
-                        .scaleEffect(animateGlow ? 1.8 : 0.9)
+                        .fill(RadialGradient(colors: [(themeColors.first ?? .blue).opacity(0.5), .purple.opacity(0.3), .clear], center: .center, startRadius: 10, endRadius: 360))
+                        .scaleEffect(animateGlow ? 1.6 : 0.9)
                         .opacity(isCelebrated ? 0.9 : (currentProgress * 0.7))
                         .offset(y: -40)
                 )
+            
+            // 粒子特效層（炸開時浮現在按鈕上方）
+            ParticleBurstView(trigger: $triggerParticleBurst, burstColor: themeColors.first ?? .purple)
+                .zIndex(5)
             
             VStack {
                 HStack {
@@ -173,7 +287,7 @@ struct FullScreenRitualView: View {
                         
                         Text(completionMethod == 0 ? "請連點中央能量圈三下" : "請長按中央能量圈充電")
                             .font(.subheadline)
-                            .foregroundStyle(.gray)
+                            .foregroundStyle(.black.opacity(0.5))
                             .tracking(1)
                     }
                     
@@ -239,7 +353,7 @@ struct FullScreenRitualView: View {
                         
                         Text("今日儀式已注入能量，綻放光芒。")
                             .font(.subheadline)
-                            .foregroundColor(.gray)
+                            .foregroundColor(.black.opacity(0.6))
                         
                         Button("完成並返回") {
                             onComplete(currentProgress)
@@ -308,6 +422,8 @@ struct FullScreenRitualView: View {
         timer = nil
         isCharging = false
         
+        // 觸發粒子爆炸
+        triggerParticleBurst = true
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         
         withAnimation(.spring(response: 0.5, dampingFraction: 0.5)) {
