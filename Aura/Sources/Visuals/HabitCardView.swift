@@ -57,13 +57,13 @@ struct HabitCardView: View {
                 Button {
                     isEditing = true
                 } label: {
-                    Label("編輯意圖", systemImage: "pencil")
+                    Label("編輯任務", systemImage: "pencil")
                 }
                 
                 Button(role: .destructive) {
                     withAnimation { delete() }
                 } label: {
-                    Label("刪除核心", systemImage: "trash")
+                    Label("刪除任務", systemImage: "trash")
                 }
             } label: {
                 Image(systemName: "ellipsis")
@@ -138,7 +138,7 @@ struct EditHabitSheet: View {
                         .frame(width: 40, height: 4)
                         .padding(.top, 12)
                     
-                    Text("修正意圖核心")
+                    Text("更改任務")
                         .font(.system(size: 22, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -146,11 +146,11 @@ struct EditHabitSheet: View {
                     
                     // 1. 意圖名稱輸入框
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("意圖名稱")
+                        Text("任務名稱")
                             .font(.system(size: 12, weight: .semibold)).tracking(1.2)
                             .foregroundStyle(.white.opacity(0.4))
                         
-                        TextField("輸入新名稱...", text: $habit.title)
+                        TextField("輸入名稱...", text: $habit.title)
                             .font(.system(size: 16, weight: .medium))
                             .foregroundStyle(.white)
                             .tint(Color(hex: habit.colorHex))
@@ -195,7 +195,7 @@ struct EditHabitSheet: View {
                     
                     // 3. 圖示搜尋與滾動選擇區
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("變更標誌（支援搜尋捷徑圖示）")
+                        Text("變更標誌")
                             .font(.system(size: 12, weight: .semibold)).tracking(1.2)
                             .foregroundStyle(.white.opacity(0.4))
                         
