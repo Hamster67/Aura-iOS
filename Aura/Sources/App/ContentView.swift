@@ -25,13 +25,13 @@ struct ContentView: View {
     // 全螢幕儀式狀態 management
     @State private var activeRitualHabit: HabitModel? = nil
     
-    // 相簿選取器狀態 - 已將類型修正為 UIImage? 以符合 LiquidCanvasView 的型別需求
+    // 相簿選取器狀態與獨立的顯示開關
     @State private var selectedItem: PhotosPickerItem? = nil
+    @State private var isShowingPhotoPicker = false
     @State private var backgroundImage: UIImage? = nil
     @AppStorage("hasCustomBackground") private var hasCustomBackground: Bool = false
 
     var body: some View {
-        // 直接將選取的 UIImage 傳入
         LiquidCanvasView(backgroundImage: backgroundImage) {
             ScrollView(showsIndicators: false) {
                 LazyVStack(alignment: .leading, spacing: 16) {
@@ -56,14 +56,17 @@ struct ContentView: View {
                             }
                             
                             Section("頁面外觀") {
-                                PhotosPicker(selection: $selectedItem, matching: .images) {
+                                // 修正：改成點擊後修改狀態，由下方的 photosPicker 監聽彈出，避開 Menu 內的手勢衝突
+                                Button {
+                                    isShowingPhotoPicker = true
+                                } label: {
                                     Label("更換背景照片", systemImage: "photo.on.rectangle")
                                 }
+                                
                                 if hasCustomBackground {
                                     Button(role: .destructive) {
                                         backgroundImage = nil
                                         hasCustomBackground = false
-                                        // 清除本地快取
                                         let url = getDocumentsDirectory().appendingPathComponent("custom_bg.png")
                                         try? FileManager.default.removeItem(at: url)
                                     } label: {
@@ -109,26 +112,26 @@ struct ContentView: View {
             }
         }
         .foregroundStyle(.white)
+        // 綁定獨立的相簿彈出視窗，確保點擊時 100% 響應
+        .photosPicker(isPresented: $isShowingPhotoPicker, selection: $selectedItem, matching: .images)
         .sheet(isPresented: $isPresentingHabitSheet) { CustomHabitSheet() }
         .fullScreenCover(item: $activeRitualHabit) { habit in
             RitualCelebrationView(habit: habit, method: completionMethod) { progress, isCharging in
                 AuraActivityController.shared.update(habitName: habit.title, progress: progress, neonColorHex: habit.colorHex, isCharging: isCharging)
             }
         }
-        // 讀取相簿選取的照片並轉換為 UIImage
+        // 讀取照片
         .onChange(of: selectedItem) { newItem in
             Task {
                 if let data = try? await newItem?.loadTransferable(type: Data.self),
                    let uiImage = UIImage(data: data) {
                     backgroundImage = uiImage
                     hasCustomBackground = true
-                    // 儲存到本地供下次冷啟動載入
                     let url = getDocumentsDirectory().appendingPathComponent("custom_bg.png")
                     try? data.write(to: url)
                 }
             }
         }
-        // App 打開時自動加載本地沙盒的 UIImage 背景
         .onAppear {
             let url = getDocumentsDirectory().appendingPathComponent("custom_bg.png")
             if let data = try? Data(contentsOf: url), let uiImage = UIImage(data: data) {
