@@ -10,9 +10,8 @@ struct ContentView: View {
     @AppStorage("completionMethod") private var completionMethod = 0 
     @State private var showSettings = false
     
-    // 全螢幕完成特效狀態
-    @State private var activeSuccessHabit: String? = nil
-    @State private var showFullSuccess = false
+    // 全螢幕互動艙狀態
+    @State private var selectedHabitForRitual: HabitModel? = nil
 
     var body: some View {
         ZStack {
@@ -21,7 +20,7 @@ struct ContentView: View {
                 ScrollView(showsIndicators: false) {
                     LazyVStack(alignment: .leading, spacing: 18) {
                         
-                        // 標頭與設定按鈕
+                        // 標頭與設定
                         HStack {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("今天，慢慢完成。")
@@ -32,7 +31,6 @@ struct ContentView: View {
                             }
                             Spacer()
                             
-                            // 主畫面設定選單按鈕
                             Button { showSettings = true } label: {
                                 Image(systemName: "gearshape.fill")
                                     .font(.title2)
@@ -47,26 +45,12 @@ struct ContentView: View {
                                 habitName: habit.title,
                                 habitStreak: 0,
                                 habitProgress: habit.progress,
-                                completionMethod: completionMethod,
                                 delete: {
                                     withAnimation { modelContext.delete(habit) }
                                 },
-                                onChargeUpdate: { progress, isCharging in
-                                    habit.progress = progress
-                                    AuraActivityController.shared.update(
-                                        habitName: habit.title,
-                                        progress: progress,
-                                        neonColorHex: habit.colorHex,
-                                        isCharging: isCharging
-                                    )
-                                    
-                                    // 觸發全螢幕完成儀式
-                                    if progress >= 1.0 && !showFullSuccess {
-                                        activeSuccessHabit = habit.title
-                                        withAnimation(.easeInOut(duration: 0.5)) {
-                                            showFullSuccess = true
-                                        }
-                                    }
+                                triggerRitual: {
+                                    // 2. 點選完成：將當前任務傳入，開啟全螢幕互動艙
+                                    selectedHabitForRitual = habit
                                 }
                             )
                         }
@@ -87,91 +71,48 @@ struct ContentView: View {
             }
             .foregroundStyle(.black)
             
-            // 主畫面底部的設定 Sheet
-            .sheet(isPresented: $showSettings) {
-                NavigationStack {
-                    Form {
-                        Section("自訂完成互動方式") {
-                            Picker("互動模式", selection: $completionMethod) {
-                                Text("連點三下完成（越點越熱烈）").tag(0)
-                                Text("長按按鈕完成（越按越熱烈）").tag(1)
-                            }
-                            .pickerStyle(.inline)
-                        }
+            // 全螢幕互動與慶祝艙層
+            if let habit = selectedHabitForRitual {
+                FullScreenRitualView(
+                    habitName: habit.title,
+                    completionMethod: completionMethod,
+                    initialProgress: habit.progress,
+                    onComplete: { finalProgress in
+                        // 更新 SwiftData
+                        habit.progress = finalProgress
+                        AuraActivityController.shared.update(
+                            habitName: habit.title,
+                            progress: finalProgress,
+                            neonColorHex: habit.colorHex,
+                            isCharging: false
+                        )
+                    },
+                    onDismiss: {
+                        selectedHabitForRitual = nil
                     }
-                    .navigationTitle("Aura 設定")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        Button("完成") { showSettings = false }
-                    }
-                }
-                .presentationDetents([.fraction(0.35)])
-            }
-            .sheet(isPresented: $isPresentingHabitSheet) { CustomHabitSheet() }
-            
-            // 全螢幕完成大特效層
-            if showFullSuccess, let habitName = activeSuccessHabit {
-                FullScreenSuccessView(habitName: habitName) {
-                    withAnimation(.easeIn(duration: 0.3)) {
-                        showFullSuccess = false
-                        activeSuccessHabit = nil
-                    }
-                }
+                )
                 .transition(.opacity)
                 .zIndex(999)
             }
         }
-    }
-}
-
-// 全螢幕熱烈完成動畫元件
-struct FullScreenSuccessView: View {
-    let habitName: String
-    var dismiss: () -> Void
-    @State private var animateGlow = false
-    @State private var scaleEffect = 0.8
-    
-    var body: some View {
-        ZStack {
-            Color.white.ignoresSafeArea()
-                .overlay(
-                    Circle()
-                        .fill(RadialGradient(colors: [.blue.opacity(0.4), .purple.opacity(0.5), .clear], center: .center, startRadius: 10, endRadius: 400))
-                        .scaleEffect(animateGlow ? 2.0 : 0.8)
-                        .opacity(animateGlow ? 0.8 : 0.3)
-                )
-            
-            VStack(spacing: 24) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 100, weight: .black))
-                    .foregroundStyle(LinearGradient(colors: [.blue, .purple], startPoint: .top, endPoint: .bottom))
-                    .scaleEffect(scaleEffect)
-                    .shadow(color: .purple.opacity(0.3), radius: 20)
-                
-                Text(habitName)
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
-                
-                Text("已完美達成今日儀式")
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
-                    .tracking(2)
-                
-                Button("延續這份光芒") { dismiss() }
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 32)
-                    .padding(.vertical, 14)
-                    .background(Capsule().fill(.black))
-                    .padding(.top, 40)
+        // 設定選單
+        .sheet(isPresented: $showSettings) {
+            NavigationStack {
+                Form {
+                    Section("自訂完成互動方式") {
+                        Picker("互動模式", selection: $completionMethod) {
+                            Text("連點三下完成（越點越熱烈）").tag(0)
+                            Text("長按按鈕完成（越按越熱烈）").tag(1)
+                        }
+                        .pickerStyle(.inline)
+                    }
+                }
+                .navigationTitle("Aura 設定")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar { Button("完成") { showSettings = false } }
             }
+            .presentationDetents([.fraction(0.35)])
         }
-        .onAppear {
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.5, blendDuration: 0)) {
-                scaleEffect = 1.0
-            }
-            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
-                animateGlow = true
-            }
-        }
+        .sheet(isPresented: $isPresentingHabitSheet) { CustomHabitSheet() }
     }
 }
