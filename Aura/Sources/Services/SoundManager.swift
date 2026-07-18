@@ -4,7 +4,7 @@ import UIKit
 class SoundManager {
     static let shared = SoundManager()
     
-    // 讓外部呼叫保持不變，但內部不執行任何聲音播放
+    // 靜態方法映射
     static func playSuccessSound() { 
         shared.triggerSuccessNotification() 
     }
@@ -14,6 +14,15 @@ class SoundManager {
     }
     
     init() {}
+    
+    // 修正：補上實例方法，對齊 HabitCardView 等外部檔案的舊呼叫，維持純震動
+    func playChargingSound() {
+        triggerLightImpact()
+    }
+    
+    func playCompletionSound() {
+        triggerSuccessNotification()
+    }
     
     /// 觸發輕微的觸覺回饋（用於充能點擊、介面微幅互動）
     func triggerLightImpact() {
