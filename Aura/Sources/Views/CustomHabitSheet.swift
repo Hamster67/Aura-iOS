@@ -123,7 +123,7 @@ struct CustomHabitSheet: View {
                     
                     Spacer()
                     
-                    // 建立按鈕（修正關鍵：補上 iconName 參數）
+                    // 建立按鈕
                     Button {
                         guard !title.isEmpty else { return }
                         let newHabit = HabitModel(
@@ -167,10 +167,10 @@ extension Color {
             (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
         case 6: // RGB (24-bit)
             (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: // ARGB (32-bit)
-            (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        case 8: // ARGB (32-bit) - 修正這裡的元組賦值
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
         default:
-            (a, r, g, b) = (1, 1, 1, 1)
+            (a, r, g, b) = (255, 255, 255, 255)
         }
         self.init(
             .sRGB,
