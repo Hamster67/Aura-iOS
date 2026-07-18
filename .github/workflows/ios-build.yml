@@ -49,12 +49,17 @@ jobs:
 
       - name: Verify unsigned Release build
         run: |
-          mkdir -p build
+          # 1. 執行編譯並顯示完整過程
           xcodebuild build -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
           -sdk iphoneos -destination 'generic/platform=iOS' \
           -derivedDataPath ./build/DerivedData \
           CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
           ASSETCATALOG_COMPILER_APPICON_NAME=AppIcon
+          
+          # 2. 診斷編譯結果：如果失敗，這一行會幫我們印出 build 目錄下到底有什麼
+          echo "編譯結束，檢查 build 目錄結構："
+          find . -type d -name "Build"
+          find ./build/DerivedData -name "*.app" 2>/dev/null || echo "找不到任何 .app 檔案"
 
       - name: Package unsigned IPA
         run: |
