@@ -19,6 +19,7 @@
  A012 = {isa = PBXBuildFile; fileRef = F012; };
  A013 = {isa = PBXBuildFile; fileRef = F013; };
  A014 /* RitualCelebrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F014 /* RitualCelebrationView.swift */; };
+ A015 /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F015 /* SoundManager.swift */; };
  W001 = {isa = PBXBuildFile; fileRef = WF001; };
  W002 = {isa = PBXBuildFile; fileRef = WF002; };
  W003 = {isa = PBXBuildFile; fileRef = WF003; };
@@ -40,6 +41,7 @@
  F012 = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = RippleShader.metal; sourceTree = "<group>"; };
  F013 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidIconPainter.swift; sourceTree = "<group>"; };
  F014 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RitualCelebrationView.swift; sourceTree = "<group>"; };
+ F015 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
  I001 = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
  EN001 = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Aura.entitlements; sourceTree = "<group>"; };
  WF001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuraWidgetsBundle.swift; sourceTree = "<group>"; };
@@ -61,7 +63,7 @@
  G105 = {isa = PBXGroup; path = Views; sourceTree = "<group>"; children = (F009,F014,); };
  G011 = {isa = PBXGroup; path = Shared; sourceTree = "<group>"; children = (F010,); };
  G012 = {isa = PBXGroup; path = Shaders; sourceTree = "<group>"; children = (F012,); };
- G013 = {isa = PBXGroup; path = Services; sourceTree = "<group>"; children = (F011,); };
+ G013 = {isa = PBXGroup; path = Services; sourceTree = "<group>"; children = (F011,F015,); };
  G106 = {isa = PBXGroup; path = Services; sourceTree = "<group>"; children = (F011,); };
  G014 = {isa = PBXGroup; path = AuraWidgets; sourceTree = "<group>"; children = (WF001,WF002,WF003,WI001,WEN01,); };
  G002 = {isa = PBXGroup; name = Products; sourceTree = "<group>"; children = (P001,P002,); };
@@ -79,7 +81,7 @@
  B102 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 /* Begin PBXSourcesBuildPhase section */
- B001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A001,A002,A003,A004,A005,A006,A007,A008,A009,A010,A011,A012,A013,A014,); runOnlyForDeploymentPostprocessing = 0; };
+ B001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A001,A002,A003,A004,A005,A006,A007,A008,A009,A010,A011,A012,A013,A014,A015,); runOnlyForDeploymentPostprocessing = 0; };
  B101 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (W001,W002,W003,W004,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 /* Begin PBXCopyFilesBuildPhase section */
