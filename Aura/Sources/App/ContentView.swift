@@ -218,18 +218,16 @@ struct ContentView: View {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
     }
     
-    // 執行 3 秒遮罩計時器（優化動畫曲線）
     private func triggerOverlay(message: String) {
         overlayTimer?.invalidate()
         overlayMessage = message
-        
-        // 彈簧動畫切入
-        withAnimation(.spring(response: 0.45, dampingFraction: 0.78, initialVelocity: 0.5)) {
+    
+        // 修正：移除不支援的 initialVelocity 參數
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.78)) {
             showOverlay = true
         }
-        
+    
         overlayTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
-            // 特製曲線淡出
             withAnimation(.curveEaseInDuration(0.3)) {
                 showOverlay = false
             }
