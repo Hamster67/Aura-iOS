@@ -38,6 +38,7 @@ struct ContentView: View {
                     // 這裡與你原本的 LiquidCanvasView 連動，為其注入主題色
                     LiquidCanvasView(backgroundImage: nil) { Color.clear }
                         .opacity(0.6)
+                        .allowsHitTesting(false) // 👈 關鍵修正：徹底廢除背景沒收手勢的能力，讓觸控能百分之百穿透
                 )
             
             ScrollView(showsIndicators: false) {
@@ -299,22 +300,24 @@ struct FullScreenRitualView: View {
                                     .foregroundColor(isCharging ? .yellow : .black.opacity(0.6))
                             )
                         
-                        // 【方案 B 核心修正】：利用實體白膠層結合同步型別修飾符，繞過 Metal Shader 的手勢吞噬
+                        // 【最高權限感應區】：利用實體白膠層結合強制手勢，封鎖任何外界干擾
                         Circle()
-                            .fill(Color.white.opacity(0.01))
-                            .frame(width: 200, height: 200)
+                            .fill(Color.white.opacity(0.01)) // 確保有透明實體像素可以捕獲觸控
+                            .frame(width: 210, height: 210) // 放大感應半徑，操作更靈敏
                             .contentShape(Circle())
-                            .modifier(DynamicGestureModifier(
-                                completionMethod: completionMethod,
-                                onTap: { triggerTapImpact() },
-                                onLongPressChanged: { isCharging in
-                                    if isCharging {
-                                        if !self.isCharging { startCharging() }
-                                    } else {
-                                        endCharging()
+                            .highPriorityGesture( // 👈 關鍵修正：升級為最高優先級手勢，強行截獲點擊
+                                DynamicGestureModifier(
+                                    completionMethod: completionMethod,
+                                    onTap: { triggerTapImpact() },
+                                    onLongPressChanged: { isCharging in
+                                        if isCharging {
+                                            if !self.isCharging { startCharging() }
+                                        } else {
+                                            endCharging()
+                                        }
                                     }
-                                }
-                            ))
+                                )
+                            )
                     }
                     .frame(width: 200, height: 200)
                     .scaleEffect(visualScale)
@@ -455,33 +458,31 @@ struct FullScreenRitualView: View {
 }
 
 // ==========================================
-// MARK: - 手勢型別動態轉換器 (解決 Group 與編編譯錯誤)
+// MARK: - 手勢型別動態轉換器 (專為 highPriorityGesture 優化)
 // ==========================================
-struct DynamicGestureModifier: ViewModifier {
+struct DynamicGestureModifier: Gesture {
     let completionMethod: Int
     let onTap: () -> Void
     let onLongPressChanged: (Bool) -> Void
 
-    func body(content: Content) -> some View {
+    var body: some Gesture {
         if completionMethod == 0 {
-            content
-                .simultaneousGesture(
-                    TapGesture()
-                        .onEnded {
-                            onTap()
-                        }
-                )
+            return AnyGesture(
+                TapGesture()
+                    .onEnded {
+                        onTap()
+                    }
+            )
         } else {
-            content
-                .simultaneousGesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { _ in
-                            onLongPressChanged(true)
-                        }
-                        .onEnded { _ in
-                            onLongPressChanged(false)
-                        }
-                )
+            return AnyGesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in
+                        onLongPressChanged(true)
+                    }
+                    .onEnded { _ in
+                        onLongPressChanged(false)
+                    }
+            )
         }
     }
 }
