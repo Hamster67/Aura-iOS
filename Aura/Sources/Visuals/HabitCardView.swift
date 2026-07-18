@@ -11,28 +11,48 @@ struct HabitCardView: View {
 
     var body: some View {
         HStack {
-            // 左側：圖示與核心名稱
-            HStack(spacing: 14) {
-                Image(systemName: habit.iconName)
-                    .font(.system(size: 20))
-                    .foregroundStyle(Color(hex: habit.colorHex))
-                    .frame(width: 44, height: 44)
-                    .background(Color(hex: habit.colorHex).opacity(0.12), in: Circle())
+            // 左側與中間：點擊此區域才會觸發充能儀式
+            Button {
+                // 1. 觸發輕微震動回饋
+                SoundManager.shared.triggerLightImpact()
                 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(habit.title)
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-                    
-                    Text("進度：\(Int(habit.progress * 100))%")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.4))
+                // 2. 播放充電上升音效
+                SoundManager.shared.playChargingSound()
+                
+                // 3. 執行原本的意圖充能邏輯
+                onTriggerRitual()
+                
+                // 4. 若進度滿格，則追加成功震動與大成功音效
+                if habit.progress >= 1.0 {
+                    SoundManager.shared.triggerSuccessNotification()
+                    SoundManager.shared.playCompletionSound()
                 }
+            } label: {
+                HStack(spacing: 14) {
+                    Image(systemName: habit.iconName)
+                        .font(.system(size: 20))
+                        .foregroundStyle(Color(hex: habit.colorHex))
+                        .frame(width: 44, height: 44)
+                        .background(Color(hex: habit.colorHex).opacity(0.12), in: Circle())
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(habit.title)
+                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                        
+                        Text("進度：\(Int(habit.progress * 100))%")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.4))
+                    }
+                    
+                    Spacer()
+                }
+                // 擴大點擊熱區，但不包含右側 Menu
+                .contentShape(Rectangle()) 
             }
+            .buttonStyle(.plain) // 移除原生 Button 的點擊變灰特效，保持磨砂玻璃質感
             
-            Spacer()
-            
-            // 右側：操作選單（編輯/刪除）
+            // 右側：獨立的操作選單，與充電手勢完全隔離
             Menu {
                 Button {
                     isEditing = true
@@ -52,7 +72,6 @@ struct HabitCardView: View {
                     .frame(width: 44, height: 44)
                     .background(.white.opacity(0.05), in: Circle())
             }
-            .highPriorityGesture(TapGesture())
         }
         .padding(.all, 20)
         .background(.white.opacity(0.02))
@@ -62,16 +81,13 @@ struct HabitCardView: View {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .stroke(.white.opacity(0.08), lineWidth: 1)
         )
-        .onTapGesture {
-            onTriggerRitual()
-        }
         .sheet(isPresented: $isEditing) {
             EditHabitSheet(habit: habit)
         }
     }
 }
 
-/// 升級版：支援搜尋數百種 SF Symbols 的編輯視窗
+/// 支援搜尋數百種 SF Symbols 的編輯視窗
 struct EditHabitSheet: View {
     @Bindable var habit: HabitModel
     @Environment(\.dismiss) private var dismiss
@@ -99,12 +115,11 @@ struct EditHabitSheet: View {
         if searchText.isEmpty {
             return allSymbols
         } else {
-            // 如果使用者搜尋，可以即時匹配
             return allSymbols.filter { $0.lowercased().contains(searchText.lowercased()) }
         }
     }
     
-    // 網格佈局（一行 5 個）
+    // 網格佈局
     let columns = [GridItem(.adaptive(minimum: 50))]
 
     var body: some View {
@@ -219,7 +234,7 @@ struct EditHabitSheet: View {
                             }
                             .padding(.vertical, 6)
                         }
-                        .frame(maxHeight: 180) // 限制高度，防止壓縮到其他 UI
+                        .frame(maxHeight: 180)
                     }
                     .padding(.horizontal, 24)
                     
