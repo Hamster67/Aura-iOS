@@ -12,10 +12,10 @@ struct HabitCardView: View {
     var body: some View {
         Menu {
             Button(action: onTriggerRitual) {
-                Label(habit.isComplete ? "重新儀式" : "進行儀式", systemImage: "bolt.shield.fill")
+                Label(habit.isComplete ? "再來一次" : "完成任務", systemImage: "bolt.shield.fill")
             }
             Button(role: .destructive, action: delete) {
-                Label("Delete ritual", systemImage: "trash")
+                Label("刪除任務", systemImage: "trash")
             }
         } label: {
             // 卡片本體視圖
