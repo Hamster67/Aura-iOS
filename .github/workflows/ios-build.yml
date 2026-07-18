@@ -27,22 +27,19 @@ jobs:
 
       - name: Link Existing App Icon to Project
         run: |
+          # 1. 深度清理舊有資產殘留，防禦 5 圖標衝突與捷徑索引丟失
+          rm -rf Aura/Assets.xcassets/AppIcon.appiconset
           mkdir -p Aura/Assets.xcassets/AppIcon.appiconset
           
-          # 1. 尋找並複製圖片
-          if [ -f "Aura.xcodeproj/AppIcon.appiconset/AppIcon.png" ]; then
-            cp "Aura.xcodeproj/AppIcon.appiconset/AppIcon.png" Aura/Assets.xcassets/AppIcon.appiconset/icon.png
-          elif [ -f "AppIcon.appiconset/AppIcon.png" ]; then
+          # 2. 注入標準 1024 尺寸源並本地修剪
+          if [ -f "AppIcon.appiconset/AppIcon.png" ]; then
             cp "AppIcon.appiconset/AppIcon.png" Aura/Assets.xcassets/AppIcon.appiconset/icon.png
           else
-            # 防禦降級機制：改用標準 1024 尺寸源，避免任何尺寸不符
             curl -sS "https://picsum.photos/1024" -o Aura/Assets.xcassets/AppIcon.appiconset/icon.png
           fi
-          
-          # 2. 強制使用 macOS 內建 sips 將圖片精準調整為 1024x1024，修正尺寸不符問題
           sips -z 1024 1024 Aura/Assets.xcassets/AppIcon.appiconset/icon.png
           
-          # 3. 寫入單一標準通用圖示配置
+          # 3. 重建 Universal 乾淨對照表，這能將捷徑 Icon 與 App 圖標綁定修正
           cat << 'EOF' > Aura/Assets.xcassets/AppIcon.appiconset/Contents.json
           {
             "images" : [
@@ -60,7 +57,7 @@ jobs:
           }
           EOF
           
-          # 4. 專案參考建立
+          # 4. 重新刷入專案資產鏈接
           gem install xcodeproj --no-document
           ruby -r xcodeproj -e '
             project_path = "Aura.xcodeproj"
