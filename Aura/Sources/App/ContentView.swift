@@ -129,15 +129,15 @@ struct ContentView: View {
                         .overlay(RoundedRectangle(cornerRadius: 24).stroke(.white.opacity(0.08)))
                     }
 
-                    // 習慣卡片列表[cite: 8]
+                    // 習慣卡片列表
                     ForEach(habits) { habit in
                         HabitCardView(
                             habit: habit,
                             delete: { modelContext.delete(habit) },
-                            onTriggerRitual: { activeRitualHabit = habit } // 點擊卡片直接進入打卡充能[cite: 8]
+                            onTriggerRitual: { activeRitualHabit = habit } // 點擊卡片直接進入打卡充能
                         )
-                        // 若今日完成，同步結算連勝
-                        .onChange(of: habit.progress) { _ in
+                        // iOS 17 新版無參數 onChange 語法，避免 Deprecated 警告
+                        .onChange(of: habit.progress) {
                             if habit.isComplete && habit.lastCheckInDate?.timeIntervalSinceNow ?? -99999 < -10 {
                                 habit.checkIn()
                             }
@@ -159,7 +159,7 @@ struct ContentView: View {
                 .padding(.horizontal, 20).padding(.bottom, 40)
             }
             
-            // 🔒 3秒強制的極簡全螢幕鎖定退出層（已優化流暢縮放與淡入淡出動畫）
+            // 🔒 3秒強制的極簡全螢幕鎖定退出層
             if showOverlay, let message = overlayMessage {
                 ZStack {
                     Color.black.opacity(0.96)
@@ -179,7 +179,6 @@ struct ContentView: View {
                     }
                     .scaleEffect(showOverlay ? 1.0 : 0.92)
                 }
-                // 進入時從 0.92x 微幅縮放淡入，退出時往外放大至 1.05x 柔和淡出
                 .transition(.asymmetric(
                     insertion: .opacity.combined(with: .scale(scale: 0.92)),
                     removal: .opacity.combined(with: .scale(scale: 1.05))
@@ -191,12 +190,13 @@ struct ContentView: View {
         .sheet(isPresented: $isPresentingHabitSheet) { CustomHabitSheet() }
         .fullScreenCover(item: $activeRitualHabit) { habit in
             RitualCelebrationView(habit: habit, method: completionMethod) { progress, isCharging in
-                AuraActivityController.shared.update(habitName: habit.title, progress: progress, neonColorHex: habit.colorHex, isCharging: isCharging) //[cite: 8]
+                AuraActivityController.shared.update(habitName: habit.title, progress: progress, neonColorHex: habit.colorHex, isCharging: isCharging) //
             }
         }
-        .onChange(of: selectedItem) { newItem in
+        // iOS 17 新版無參數 onChange 語法
+        .onChange(of: selectedItem) {
             Task {
-                if let data = try? await newItem?.loadTransferable(type: Data.self),
+                if let data = try? await selectedItem?.loadTransferable(type: Data.self),
                    let uiImage = UIImage(data: data) {
                     backgroundImage = uiImage
                     hasCustomBackground = true
@@ -222,7 +222,6 @@ struct ContentView: View {
         overlayTimer?.invalidate()
         overlayMessage = message
     
-        // 修正：移除不支援的 initialVelocity 參數
         withAnimation(.spring(response: 0.45, dampingFraction: 0.78)) {
             showOverlay = true
         }
@@ -239,51 +238,5 @@ struct ContentView: View {
 extension Animation {
     static func curveEaseInDuration(_ duration: TimeInterval) -> Animation {
         return .timingCurve(0.42, 0, 1, 1, duration: duration)
-    }
-}
-
-// MARK: - 建立習慣表單範例（防禦建立時缺少圖示的問題）
-struct CustomHabitSheet: View {
-    @Environment(\.modelContext) private var modelContext
-    @Environment(\.dismiss) private var dismiss
-    
-    @State private var title: String = ""
-    @State private var colorHex: String = "#00FFFF"
-    // 💡 建立初始化時直接塞入一個預設的捷徑圖示名稱（例如 "sparkles" 或 "ellipsis.circle.fill"）
-    @State private var selectedIcon: String = "ellipsis.circle.fill"
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section("任務名稱") {
-                    TextField("例如：每日冥想、核心訓練", text: $title)
-                }
-                
-                Section("任務圖示") {
-                    HStack {
-                        Image(systemName: selectedIcon)
-                            .font(.title2)
-                            .foregroundStyle(.cyan)
-                        Text("將設定此任務圖示")
-                    }
-                }
-            }
-            .navigationTitle("新任務")
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("建立") {
-                        // 💡 寫入 SwiftData 時，務必確保傳入了 iconName 變數
-                        let newHabit = HabitModel(
-                            title: title,
-                            iconName: selectedIcon, 
-                            colorHex: colorHex
-                        )
-                        modelContext.insert(newHabit)
-                        dismiss()
-                    }
-                    .disabled(title.isEmpty)
-                }
-            }
-        }
     }
 }
