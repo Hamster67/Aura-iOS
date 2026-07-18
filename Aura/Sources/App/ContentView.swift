@@ -224,7 +224,7 @@ struct ParticleBurstView: View {
 }
 
 // ==========================================
-// MARK: - 修正版：全螢幕互動艙與原地慶祝畫面 (FullScreenRitualView)
+// MARK: - 完美修正版：全螢幕互動艙與原地慶祝畫面 (FullScreenRitualView)
 // ==========================================
 struct FullScreenRitualView: View {
     let habitName: String
@@ -240,7 +240,7 @@ struct FullScreenRitualView: View {
     @State private var timer: Timer? = nil
     
     @State private var visualScale: CGFloat = 1.0
-    @State private var tapCount = 0
+    @State private var tapCount = 0 // 將在 onAppear 根據現有進度精確初始化
     
     @State private var isCelebrated = false
     @State private var animateGlow = false
@@ -276,9 +276,9 @@ struct FullScreenRitualView: View {
                             .foregroundStyle(.black.opacity(0.5))
                             .tracking(1)
                     }
-                    .padding(.top, 60) // 預留頂部空間給關閉按鈕
+                    .padding(.top, 60)
                     
-                    // 【關鍵修正】：把手勢直接焊死在圓球容器本身，不再往外擴散
+                    // 中央能量圈
                     ZStack {
                         Circle()
                             .stroke(Color.black.opacity(0.05), lineWidth: 8)
@@ -303,16 +303,21 @@ struct FullScreenRitualView: View {
                                     .foregroundColor(isCharging ? .yellow : .black.opacity(0.6))
                             )
                     }
-                    .frame(width: 200, height: 200) // 嚴格限制點擊熱區範圍
+                    .frame(width: 200, height: 200)
                     .scaleEffect(visualScale)
                     .animation(.spring(response: 0.2, dampingFraction: 0.5), value: visualScale)
-                    // 將隱形手勢墊片移入圓球本體內
+                    // 【核心修正】：更換高靈敏度原生觸發墊片，並將連點機制精確化
                     .overlay(
                         Group {
                             if completionMethod == 0 {
-                                Color.clear
-                                    .contentShape(Circle())
-                                    .onTapGesture { triggerTapImpact() }
+                                Button(action: {
+                                    triggerTapImpact()
+                                }) {
+                                    Color.clear
+                                }
+                                .buttonStyle(.plain)
+                                .frame(width: 200, height: 200)
+                                .contentShape(Circle())
                             } else {
                                 Color.clear
                                     .contentShape(Circle())
@@ -348,7 +353,6 @@ struct FullScreenRitualView: View {
                             .font(.subheadline)
                             .foregroundColor(.black.opacity(0.6))
                         
-                        // 【按鈕點擊修正】：確保此處使用最高點擊響應
                         Button(action: {
                             onComplete(currentProgress)
                             onDismiss()
@@ -370,7 +374,7 @@ struct FullScreenRitualView: View {
             }
             .padding(.horizontal, 40)
             
-            // 4. 【關鍵修正】：把關閉按鈕移至 ZStack 最底層（也就是視覺最上層）並強制給予最高 zIndex
+            // 右上角關閉按鈕
             if !isCelebrated {
                 VStack {
                     HStack {
@@ -382,17 +386,20 @@ struct FullScreenRitualView: View {
                                 .font(.system(size: 30))
                                 .foregroundStyle(.black.opacity(0.3))
                                 .padding(24)
-                                .contentShape(Rectangle()) // 擴大打叉按鈕的點擊熱區
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                     }
                     Spacer()
                 }
-                .zIndex(10) // 確保在隱形牆之上
+                .zIndex(10)
             }
         }
         .onAppear {
             currentProgress = initialProgress
+            // 【關鍵修正】：逆向推算初始點擊數。如果原本已經有 34% 的進度，點擊數直接從 1 開始跳
+            tapCount = Int(round(initialProgress / 0.34))
+            
             withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
                 animateGlow = true
             }
@@ -401,15 +408,23 @@ struct FullScreenRitualView: View {
     
     private func triggerTapImpact() {
         tapCount += 1
-        visualScale = 1.0 + (CGFloat(tapCount) * 0.12)
-        UIImpactFeedbackGenerator(style: .heavy).impactOccurred(intensity: CGFloat(tapCount) * 0.33)
+        visualScale = 1.0 + (CGFloat(tapCount) * 0.08)
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred(intensity: min(CGFloat(tapCount) * 0.33, 1.0))
         
-        withAnimation(.linear(duration: 0.15)) {
+        // 【優化】：點擊增量更滑順，避免進度不升反降
+        withAnimation(.spring(response: 0.15, dampingFraction: 0.6)) {
             currentProgress = min(Double(tapCount) * 0.34, 1.0)
         }
         
         if currentProgress >= 1.0 {
             triggerCelebration()
+        } else {
+            // 點擊完自動回彈縮放，製造打擊反饋感
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                if !isCelebrated {
+                    withAnimation(.spring()) { visualScale = 1.0 }
+                }
+            }
         }
     }
     
