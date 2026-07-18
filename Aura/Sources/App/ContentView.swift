@@ -1,6 +1,6 @@
 import SwiftUI
 import SwiftData
-import PhotosUI // 引入相簿元件
+import PhotosUI 
 
 /// 儀式完成方式設定
 enum CompletionMethod: String, CaseIterable, Identifiable {
@@ -22,16 +22,16 @@ struct ContentView: View {
     // 設定完成方式，預設為長按
     @AppStorage("completionMethod") private var completionMethod: CompletionMethod = .longPress
     
-    // 全螢幕儀式狀態管理
+    // 全螢幕儀式狀態 management
     @State private var activeRitualHabit: HabitModel? = nil
     
-    // 相簿選取器狀態
+    // 相簿選取器狀態 - 已將類型修正為 UIImage? 以符合 LiquidCanvasView 的型別需求
     @State private var selectedItem: PhotosPickerItem? = nil
-    @State private var backgroundImage: Image? = nil
+    @State private var backgroundImage: UIImage? = nil
     @AppStorage("hasCustomBackground") private var hasCustomBackground: Bool = false
 
     var body: some View {
-        // 將選取的 backgroundImage 傳入
+        // 直接將選取的 UIImage 傳入
         LiquidCanvasView(backgroundImage: backgroundImage) {
             ScrollView(showsIndicators: false) {
                 LazyVStack(alignment: .leading, spacing: 16) {
@@ -115,24 +115,24 @@ struct ContentView: View {
                 AuraActivityController.shared.update(habitName: habit.title, progress: progress, neonColorHex: habit.colorHex, isCharging: isCharging)
             }
         }
-        // 讀取相簿選取的照片並儲存到本地沙盒
+        // 讀取相簿選取的照片並轉換為 UIImage
         .onChange(of: selectedItem) { newItem in
             Task {
                 if let data = try? await newItem?.loadTransferable(type: Data.self),
                    let uiImage = UIImage(data: data) {
-                    backgroundImage = Image(uiImage: uiImage)
+                    backgroundImage = uiImage
                     hasCustomBackground = true
-                    // 儲存到本地，供下次打開時讀取
+                    // 儲存到本地供下次冷啟動載入
                     let url = getDocumentsDirectory().appendingPathComponent("custom_bg.png")
                     try? data.write(to: url)
                 }
             }
         }
-        // App 打開時自動加載之前儲存的背景
+        // App 打開時自動加載本地沙盒的 UIImage 背景
         .onAppear {
             let url = getDocumentsDirectory().appendingPathComponent("custom_bg.png")
             if let data = try? Data(contentsOf: url), let uiImage = UIImage(data: data) {
-                backgroundImage = Image(uiImage: uiImage)
+                backgroundImage = uiImage
                 hasCustomBackground = true
             }
         }
