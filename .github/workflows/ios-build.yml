@@ -27,37 +27,49 @@ jobs:
 
       - name: Link Existing App Icon to Project
         run: |
-          # 1. 深度清理舊有資產殘留，防禦 5 圖標衝突與捷徑索引丟失
+          # 1. 深度清理舊有資產殘留，防禦多圖標衝突
           rm -rf Aura/Assets.xcassets/AppIcon.appiconset
           mkdir -p Aura/Assets.xcassets/AppIcon.appiconset
           
-          # 2. 注入標準 1024 尺寸源並本地修剪
+          # 2. 注入標準 1024 尺寸源
           if [ -f "AppIcon.appiconset/AppIcon.png" ]; then
-            cp "AppIcon.appiconset/AppIcon.png" Aura/Assets.xcassets/AppIcon.appiconset/icon.png
+            cp "AppIcon.appiconset/AppIcon.png" Aura/Assets.xcassets/AppIcon.appiconset/icon_1024.png
           else
-            curl -sS "https://picsum.photos/1024" -o Aura/Assets.xcassets/AppIcon.appiconset/icon.png
+            curl -sS "https://picsum.photos/1024" -o Aura/Assets.xcassets/AppIcon.appiconset/icon_1024.png
           fi
-          sips -z 1024 1024 Aura/Assets.xcassets/AppIcon.appiconset/icon.png
           
-          # 3. 重建 Universal 乾淨對照表，這能將捷徑 Icon 與 App 圖標綁定修正
-          cat << 'EOF' > Aura/Assets.xcassets/AppIcon.appiconset/Contents.json
+          # 3. 強制使用 sips 生成符合 Xcode 15.4 標準的多尺寸切片檔案
+          cd Aura/Assets.xcassets/AppIcon.appiconset
+          sips -z 40 40   icon_1024.png --out icon_20x20_2x.png
+          sips -z 60 60   icon_1024.png --out icon_20x20_3x.png
+          sips -z 58 58   icon_1024.png --out icon_29x29_2x.png
+          sips -z 87 87   icon_1024.png --out icon_29x29_3x.png
+          sips -z 80 80   icon_1024.png --out icon_40x40_2x.png
+          sips -z 120 120 icon_1024.png --out icon_40x40_3x.png
+          sips -z 120 120 icon_1024.png --out icon_60x60_2x.png
+          sips -z 180 180 icon_1024.png --out icon_60x60_3x.png
+          sips -z 1024 1024 icon_1024.png --out icon_1024.png
+          
+          # 4. 寫入符合 Xcode 15 標準的完整 JSON 對照表（修復無內容錯誤與捷徑圖標衝突）
+          cat << 'EOF' > Contents.json
           {
             "images" : [
-              {
-                "idiom" : "universal",
-                "platform" : "ios",
-                "size" : "1024x1024",
-                "filename" : "icon.png"
-              }
+              { "size" : "20x20", "idiom" : "iphone", "filename" : "icon_20x20_2x.png", "scale" : "2x" },
+              { "size" : "20x20", "idiom" : "iphone", "filename" : "icon_20x20_3x.png", "scale" : "3x" },
+              { "size" : "29x29", "idiom" : "iphone", "filename" : "icon_29x29_2x.png", "scale" : "2x" },
+              { "size" : "29x29", "idiom" : "iphone", "filename" : "icon_29x29_3x.png", "scale" : "3x" },
+              { "size" : "40x40", "idiom" : "iphone", "filename" : "icon_40x40_2x.png", "scale" : "2x" },
+              { "size" : "40x40", "idiom" : "iphone", "filename" : "icon_40x40_3x.png", "scale" : "3x" },
+              { "size" : "60x60", "idiom" : "iphone", "filename" : "icon_60x60_2x.png", "scale" : "2x" },
+              { "size" : "60x60", "idiom" : "iphone", "filename" : "icon_60x60_3x.png", "scale" : "3x" },
+              { "size" : "1024x1024", "idiom" : "ios-marketing", "filename" : "icon_1024.png", "scale" : "1x" }
             ],
-            "info" : {
-              "author" : "xcode",
-              "version" : 1
-            }
+            "info" : { "author" : "xcode", "version" : 1 }
           }
           EOF
+          cd ../../..
           
-          # 4. 重新刷入專案資產鏈接
+          # 5. 重新刷入專案資產鏈接
           gem install xcodeproj --no-document
           ruby -r xcodeproj -e '
             project_path = "Aura.xcodeproj"
