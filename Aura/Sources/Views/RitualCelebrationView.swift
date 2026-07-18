@@ -97,7 +97,7 @@ struct RitualCelebrationView: View {
                         .fill(.white.opacity(0.05))
                         .overlay(
                             Text(method == .longPress ? "HOLD" : "TAP TAP TAP")
-                                .font(.title3.bold().rounded())
+                                .font(.system(.title3, design: .rounded).bold()) // 修正 1: 修正 Font 沒結構 rounded 擴充之問題
                                 .foregroundColor(.white.opacity(0.3))
                         )
                         .frame(height: 120)
@@ -131,6 +131,7 @@ struct RitualCelebrationView: View {
     private var ritualGesture: some Gesture {
         switch method {
         case .longPress:
+            // 修正 2: 通過 .map 轉成相同的 AnyGesture<Void> 擦除不一致的內部手勢型別
             return AnyGesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { _ in
@@ -143,6 +144,7 @@ struct RitualCelebrationView: View {
                         isInteracting = false
                         stopCharging()
                     }
+                    .map { _ in () }
             )
         case .tripleTap:
             return AnyGesture(
@@ -150,6 +152,7 @@ struct RitualCelebrationView: View {
                     .onEnded { _ in
                         triggerTripleTapProgress()
                     }
+                    .map { _ in () }
             )
         }
     }
@@ -230,8 +233,9 @@ struct RitualCelebrationView: View {
     private func triggerCelebration() {
         cleanUp()
         isCelebrating = true
+        
+        // 修正 3: SwiftData 中計算屬性 isComplete 為 get-only，進度已由 progress 控制，移除直接賦值
         habit.progress = 1.0
-        habit.isComplete = true
         onChargeUpdate(1.0, false)
         
         UINotificationFeedbackGenerator().notificationOccurred(.success)
