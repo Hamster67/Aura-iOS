@@ -224,7 +224,7 @@ struct ParticleBurstView: View {
 }
 
 // ==========================================
-// MARK: - 完美修正版：全螢幕互動艙與原地慶祝畫面 (FullScreenRitualView)
+// MARK: - 終極修復版：實體化觸發熱區 (FullScreenRitualView)
 // ==========================================
 struct FullScreenRitualView: View {
     let habitName: String
@@ -240,7 +240,7 @@ struct FullScreenRitualView: View {
     @State private var timer: Timer? = nil
     
     @State private var visualScale: CGFloat = 1.0
-    @State private var tapCount = 0 // 將在 onAppear 根據現有進度精確初始化
+    @State private var tapCount = 0 
     
     @State private var isCelebrated = false
     @State private var animateGlow = false
@@ -306,20 +306,22 @@ struct FullScreenRitualView: View {
                     .frame(width: 200, height: 200)
                     .scaleEffect(visualScale)
                     .animation(.spring(response: 0.2, dampingFraction: 0.5), value: visualScale)
-                    // 【核心修正】：更換高靈敏度原生觸發墊片，並將連點機制精確化
+                    // 【終極修正】：利用不可見的實體白膠層（opacity: 0.001）封鎖 Hit-Test 穿透漏洞
                     .overlay(
                         Group {
                             if completionMethod == 0 {
                                 Button(action: {
                                     triggerTapImpact()
                                 }) {
-                                    Color.clear
+                                    Circle()
+                                        .fill(Color.white.opacity(0.001)) // 實體化觸發媒介
+                                        .frame(width: 200, height: 200)
                                 }
                                 .buttonStyle(.plain)
-                                .frame(width: 200, height: 200)
-                                .contentShape(Circle())
                             } else {
-                                Color.clear
+                                Circle()
+                                    .fill(Color.white.opacity(0.001)) // 實體化觸發媒介
+                                    .frame(width: 200, height: 200)
                                     .contentShape(Circle())
                                     .gesture(
                                         DragGesture(minimumDistance: 0)
@@ -397,7 +399,6 @@ struct FullScreenRitualView: View {
         }
         .onAppear {
             currentProgress = initialProgress
-            // 【關鍵修正】：逆向推算初始點擊數。如果原本已經有 34% 的進度，點擊數直接從 1 開始跳
             tapCount = Int(round(initialProgress / 0.34))
             
             withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
@@ -411,7 +412,6 @@ struct FullScreenRitualView: View {
         visualScale = 1.0 + (CGFloat(tapCount) * 0.08)
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred(intensity: min(CGFloat(tapCount) * 0.33, 1.0))
         
-        // 【優化】：點擊增量更滑順，避免進度不升反降
         withAnimation(.spring(response: 0.15, dampingFraction: 0.6)) {
             currentProgress = min(Double(tapCount) * 0.34, 1.0)
         }
@@ -419,7 +419,6 @@ struct FullScreenRitualView: View {
         if currentProgress >= 1.0 {
             triggerCelebration()
         } else {
-            // 點擊完自動回彈縮放，製造打擊反饋感
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 if !isCelebrated {
                     withAnimation(.spring()) { visualScale = 1.0 }
