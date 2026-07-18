@@ -25,21 +25,24 @@ jobs:
       - name: Select Xcode 15
         run: sudo xcode-select --switch /Applications/Xcode_15.4.app
 
-      # 修正：精準對齊 GitHub Actions 工作目錄下的實體圖片路徑
       - name: Link Existing App Icon to Project
         run: |
           mkdir -p Aura/Assets.xcassets/AppIcon.appiconset
           
-          # 修正複製路徑，直接抓取專案內的實體圖片
+          # 1. 尋找並複製圖片
           if [ -f "Aura.xcodeproj/AppIcon.appiconset/AppIcon.png" ]; then
             cp "Aura.xcodeproj/AppIcon.appiconset/AppIcon.png" Aura/Assets.xcassets/AppIcon.appiconset/icon.png
           elif [ -f "AppIcon.appiconset/AppIcon.png" ]; then
             cp "AppIcon.appiconset/AppIcon.png" Aura/Assets.xcassets/AppIcon.appiconset/icon.png
           else
-            # 防禦機制：若真的找不到，從網路補一張，確保編譯絕對不卡住且一定有 Icon
+            # 防禦降級機制：改用標準 1024 尺寸源，避免任何尺寸不符
             curl -sS "https://picsum.photos/1024" -o Aura/Assets.xcassets/AppIcon.appiconset/icon.png
           fi
           
+          # 2. 強制使用 macOS 內建 sips 將圖片精準調整為 1024x1024，修正尺寸不符問題
+          sips -z 1024 1024 Aura/Assets.xcassets/AppIcon.appiconset/icon.png
+          
+          # 3. 寫入單一標準通用圖示配置
           cat << 'EOF' > Aura/Assets.xcassets/AppIcon.appiconset/Contents.json
           {
             "images" : [
@@ -57,6 +60,7 @@ jobs:
           }
           EOF
           
+          # 4. 專案參考建立
           gem install xcodeproj --no-document
           ruby -r xcodeproj -e '
             project_path = "Aura.xcodeproj"
@@ -69,7 +73,7 @@ jobs:
                 if target.name == "Aura"
                   target.resources_build_phase.add_file_reference(file_ref)
                   target.build_configurations.each do |config|
-                    config.build_settings["ASSETCatalog_COMPILER_APPICON_NAME"] = "AppIcon"
+                    config.build_settings["ASSETCATALOG_COMPILER_APPICON_NAME"] = "AppIcon"
                   end
                 end
               end
