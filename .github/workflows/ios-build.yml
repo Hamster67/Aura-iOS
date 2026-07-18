@@ -21,7 +21,7 @@ jobs:
         xcrun metal -c Aura/Shaders/RippleShader.metal -o build/RippleShader.air
         xcrun metallib build/RippleShader.air -o build/default.metallib
     
-    - name: Build Unsigned App
+    - name: Build Only App (No Widget)
       run: |
         xcodebuild -project Aura.xcodeproj \
           -scheme Aura \
@@ -34,6 +34,12 @@ jobs:
           PROVISIONING_PROFILE_SPECIFIER="" \
           ONLY_ACTIVE_ARCH=NO \
           build
+    
+        # 只複製 App，不複製 Widget
+        mkdir -p build/Payload
+        cp -R build/derived/Build/Products/Release-iphoneos/Aura.app build/Payload/
+        cp build/default.metallib build/Payload/Aura.app/
+        cd build && zip -r Aura.ipa Payload/
     
     - name: Verify Build Output
       run: |
