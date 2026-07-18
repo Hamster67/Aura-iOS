@@ -182,7 +182,7 @@ struct EditHabitSheet: View {
                     Button {
                         dismiss()
                     } label: {
-                        Text("儲存核心變更")
+                        Text("儲存變更")
                             .font(.system(size: 16, weight: .semibold, design: .rounded))
                             .foregroundStyle(.black)
                             .frame(maxWidth: .infinity, minHeight: 56)
