@@ -303,21 +303,21 @@ struct FullScreenRitualView: View {
                                     .foregroundColor(isCharging ? .yellow : .black.opacity(0.6))
                             )
                         
-                        // 【終極關鍵】：放一個真正著色的實體圓形覆蓋在最上面，並直接綁定最高優先權手勢
+                        // 【方案 B 核心修正】：利用實體白膠層結合同步手勢，繞過 Metal Shader 的手勢吞噬
                         Circle()
                             .fill(Color.white.opacity(0.01))
                             .frame(width: 200, height: 200)
-                            // 這裡強行用 highPriorityGesture 覆蓋掉外面所有 LiquidCanvas 或 ScrollView 的干擾
-                            .highPriorityGesture(
+                            .contentShape(Circle())
+                            .simultaneousGesture(
                                 Group {
                                     if completionMethod == 0 {
-                                        // 連點模式：用普通點擊
+                                        // 連點模式：強制同步觸發點擊
                                         TapGesture()
                                             .onEnded {
                                                 triggerTapImpact()
                                             }
                                     } else {
-                                        // 長按模式：用模擬長按的 DragGesture
+                                        // 長按模式：強制同步觸發拖曳/長按
                                         DragGesture(minimumDistance: 0)
                                             .onChanged { _ in
                                                 if !isCharging { startCharging() }
