@@ -224,7 +224,7 @@ struct ParticleBurstView: View {
 }
 
 // ==========================================
-// MARK: - 終極修復版：實體化觸發熱區 (FullScreenRitualView)
+// MARK: - 降維打擊版：強佔最高手勢優先權 (FullScreenRitualView)
 // ==========================================
 struct FullScreenRitualView: View {
     let habitName: String
@@ -278,7 +278,7 @@ struct FullScreenRitualView: View {
                     }
                     .padding(.top, 60)
                     
-                    // 中央能量圈
+                    // 中央能量圈主體
                     ZStack {
                         Circle()
                             .stroke(Color.black.opacity(0.05), lineWidth: 8)
@@ -302,35 +302,36 @@ struct FullScreenRitualView: View {
                                     .font(.system(size: 48, weight: .bold))
                                     .foregroundColor(isCharging ? .yellow : .black.opacity(0.6))
                             )
+                        
+                        // 【終極關鍵】：放一個真正著色的實體圓形覆蓋在最上面，並直接綁定最高優先權手勢
+                        Circle()
+                            .fill(Color.white.opacity(0.01))
+                            .frame(width: 200, height: 200)
+                            // 這裡強行用 highPriorityGesture 覆蓋掉外面所有 LiquidCanvas 或 ScrollView 的干擾
+                            .highPriorityGesture(
+                                Group {
+                                    if completionMethod == 0 {
+                                        // 連點模式：用普通點擊
+                                        TapGesture()
+                                            .onEnded {
+                                                triggerTapImpact()
+                                            }
+                                    } else {
+                                        // 長按模式：用模擬長按的 DragGesture
+                                        DragGesture(minimumDistance: 0)
+                                            .onChanged { _ in
+                                                if !isCharging { startCharging() }
+                                            }
+                                            .onEnded { _ in
+                                                endCharging()
+                                            }
+                                    }
+                                }
+                            )
                     }
                     .frame(width: 200, height: 200)
                     .scaleEffect(visualScale)
                     .animation(.spring(response: 0.2, dampingFraction: 0.5), value: visualScale)
-                    // 【終極修正】：利用不可見的實體白膠層（opacity: 0.001）封鎖 Hit-Test 穿透漏洞
-                    .overlay(
-                        Group {
-                            if completionMethod == 0 {
-                                Button(action: {
-                                    triggerTapImpact()
-                                }) {
-                                    Circle()
-                                        .fill(Color.white.opacity(0.001)) // 實體化觸發媒介
-                                        .frame(width: 200, height: 200)
-                                }
-                                .buttonStyle(.plain)
-                            } else {
-                                Circle()
-                                    .fill(Color.white.opacity(0.001)) // 實體化觸發媒介
-                                    .frame(width: 200, height: 200)
-                                    .contentShape(Circle())
-                                    .gesture(
-                                        DragGesture(minimumDistance: 0)
-                                            .onChanged { _ in if !isCharging { startCharging() } }
-                                            .onEnded { _ in endCharging() }
-                                    )
-                            }
-                        }
-                    )
                     
                     Text("\(Int(currentProgress * 100))%")
                         .font(.system(size: 24, weight: .bold, design: .monospaced))
