@@ -472,7 +472,7 @@ struct DynamicGestureModifier: Gesture {
                     .onEnded {
                         onTap()
                     }
-            )
+            ).map { _ in () } // 👈 抹除泛型關聯型別為 Void
         } else {
             return AnyGesture(
                 DragGesture(minimumDistance: 0)
@@ -482,7 +482,7 @@ struct DynamicGestureModifier: Gesture {
                     .onEnded { _ in
                         onLongPressChanged(false)
                     }
-            )
+            ).map { _ in () } // 👈 抹除泛型關聯型別為 Void
         }
     }
 }
