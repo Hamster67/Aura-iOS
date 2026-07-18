@@ -32,10 +32,14 @@ jobs:
           rm -rf "${{ github.workspace }}/TempIcons.xcassets"
           mkdir -p "$TEMP_ICON_PATH"
           
-          # 2. 抓取或複製 1024x1024 原始圖檔
-          if [ -f "AppIcon.appiconset/AppIcon.png" ]; then
-            cp "AppIcon.appiconset/AppIcon.png" "$TEMP_ICON_PATH/icon_1024.png"
+          # 2. 修正：精確對準你提供的圖檔路徑進行複製
+          TARGET_ICON="Aura-iOS/Aura.xcodeproj/AppIcon.appiconset/AppIcon.png"
+          
+          if [ -f "$TARGET_ICON" ]; then
+            echo "✅ 找到指定的 AppIcon.png，正在複製到編譯緩存..."
+            cp "$TARGET_ICON" "$TEMP_ICON_PATH/icon_1024.png"
           else
+            echo "⚠️ 未能在 $TARGET_ICON 找到圖檔，改用網路預設圖..."
             curl -sS "https://picsum.photos/1024" -o "$TEMP_ICON_PATH/icon_1024.png"
           fi
           
@@ -74,8 +78,7 @@ jobs:
           -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath "$DERIVED_DATA_PATH" CODE_SIGNING_ALLOWED=NO
           CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" CODE_SIGN_ENTITLEMENTS=""
           ASSETCATALOG_COMPILER_APPICON_NAME=AppIcon
-          XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME=AppIcon
-          XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_OTHER_FLAGS="--app-icon AppIcon ${{ github.workspace }}/TempIcons.xcassets"
+          OTHER_ACTOOLFLAGS="--app-icon AppIcon ${{ github.workspace }}/TempIcons.xcassets"
 
       - name: Package unsigned IPA
         run: |
@@ -114,8 +117,7 @@ jobs:
           xcodebuild clean archive -project "$PROJECT" -scheme "$SCHEME"
           -configuration Release -archivePath "$ARCHIVE_PATH" -derivedDataPath "$DERIVED_DATA_PATH" DEVELOPMENT_TEAM="$TEAM_ID"
           ASSETCATALOG_COMPILER_APPICON_NAME=AppIcon
-          XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME=AppIcon
-          XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_OTHER_FLAGS="--app-icon AppIcon ${{ github.workspace }}/TempIcons.xcassets"
+          OTHER_ACTOOLFLAGS="--app-icon AppIcon ${{ github.workspace }}/TempIcons.xcassets"
 
       - name: Export IPA
         if: env.HAS_SIGNING == 'true' && github.event_name != 'pull_request'
@@ -149,7 +151,7 @@ jobs:
           tag: "v1.0.${{ github.run_number }}"
           name: "Aura Core Build v1.0.${{ github.run_number }}"
           body: |
-            Aura 自動編編譯意圖核心。
+            Aura 自動編譯完成。
             
             - 已整合專案原生 AppIcon 資源進行打包
             - 包含完整的圖示搜尋與 SoundManager 更新
