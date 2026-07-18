@@ -49,19 +49,25 @@ jobs:
 
       - name: Verify and Debug Build
         run: |
-          # 1. 列出檔案結構，確認 Aura.xcodeproj 的位置
-          echo "當前目錄內容："
-          ls -F
-          echo "檢查 Aura-iOS 目錄："
-          ls -F Aura-iOS/ || echo "Aura-iOS 目錄不存在"
+          echo "--- 當前路徑內容 ---"
+          ls -R
           
-          # 2. 執行編譯並確保能看到錯誤訊息
-          echo "開始執行編譯..."
+          echo "--- 開始執行編譯 ---"
+          # 使用完整的絕對路徑來確保編譯器能找到專案
           xcodebuild build -project "Aura-iOS/Aura.xcodeproj" -scheme "Aura" -configuration Release \
           -sdk iphoneos -destination 'generic/platform=iOS' \
-          -derivedDataPath ./build/DerivedData \
+          -derivedDataPath "$(pwd)/build/DerivedData" \
           CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
           ASSETCATALOG_COMPILER_APPICON_NAME=AppIcon
+          
+          # 檢查編譯結果
+          if [ -d "$(pwd)/build/DerivedData" ]; then
+            echo "✅ 編譯目錄已建立"
+            find "$(pwd)/build/DerivedData" -name "Aura.app"
+          else
+            echo "❌ 編譯目錄仍未建立，請檢查上方錯誤訊息"
+            exit 1
+          fi
 
       - name: Package unsigned IPA
         run: |
