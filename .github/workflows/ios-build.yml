@@ -6,6 +6,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# 核心修正：加入寫入權限，允許此 Workflow 建立並推送至 GitHub Releases
+permissions:
+  contents: write
+
 jobs:
   build-and-export:
     runs-on: macos-14
@@ -98,19 +102,16 @@ jobs:
           let fm = FileManager.default
           let currentDirURL = URL(fileURLWithPath: fm.currentDirectoryPath)
 
-          // 核心修正：不靠漫無目的的搜尋，直接精準鎖定並強行建立標準的 AppIcon 目錄
           let targetAssetFolder = currentDirURL
               .appendingPathComponent("Aura")
               .appendingPathComponent("Assets.xcassets")
               .appendingPathComponent("AppIcon.appiconset")
 
-          // 如果專案資料夾不存在，就強制建立它
           try? fm.createDirectory(at: targetAssetFolder, withIntermediateDirectories: true, attributes: nil)
           print("📥 目標圖示庫確認成功: \(targetAssetFolder.path)")
 
           let iconView = AuraAppIconView()
 
-          // 輸出所有需要的 iOS 尺寸
           saveIcon(view: iconView, size: 1024, to: targetAssetFolder.appendingPathComponent("appstore.png"))
           saveIcon(view: iconView, size: 180, to: targetAssetFolder.appendingPathComponent("iphone-60@3x.png"))
           saveIcon(view: iconView, size: 120, to: targetAssetFolder.appendingPathComponent("iphone-60@2x.png"))
@@ -119,7 +120,6 @@ jobs:
           saveIcon(view: iconView, size: 80, to: targetAssetFolder.appendingPathComponent("iphone-40@2x.png"))
           saveIcon(view: iconView, size: 120, to: targetAssetFolder.appendingPathComponent("iphone-40@3x.png"))
 
-          // 寫入對應的標準索引配置
           let jsonContent = """
           {
             "images" : [
@@ -157,9 +157,16 @@ jobs:
           cd build/sideload
           zip -qry ../Aura-Sideload.ipa Payload
 
-      - name: Publish Sideload IPA
-        uses: actions/upload-artifact@v4
+      - name: Create GitHub Release and Upload IPA
+        uses: softprops/action-gh-release@v2
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:
-          name: Aura-Sideload-Artifact
-          path: build/Aura-Sideload.ipa
-          retention-days: 14
+          tag_name: v1.0.${{ github.run_number }}
+          name: Aura Build Release v1.0.${{ github.run_number }}
+          body: |
+            Aura iOS 簽名專用自動化建置版本。
+            - 內含霓虹流體玻璃球 App Icon。
+            - 適用於 Sideloadly 或巨魔（TrollStore）等側載工具。
+          draft: false
+          prerelease: false
+          files: build/Aura-Sideload.ipa
