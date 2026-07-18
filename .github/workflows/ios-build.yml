@@ -27,35 +27,42 @@ jobs:
 
       - name: Force Inject App Icon to App Bundle
         run: |
-          # 1. 自動偵測專案目錄
-          PROJECT_ROOT=$(pwd)
-          echo "當前專案根目錄: $PROJECT_ROOT"
+          # 1. 使用絕對路徑進行搜尋
+          PROJECT_ROOT="/Users/runner/work/Aura-iOS/Aura-iOS"
           
-          # 2. 自動尋找 .app 檔案路徑 (不論它在哪個深層資料夾)
-          APP_PATH=$(find "$PROJECT_ROOT/build" -name "Aura.app" -type d | head -n 1)
-          echo "找到的 App 路徑: $APP_PATH"
+          # 2. 修正：在整個工作目錄下搜尋 Aura.app (確保能找到 build 產物)
+          APP_PATH=$(find "$PROJECT_ROOT" -name "Aura.app" -type d | head -n 1)
           
-          # 3. 自動尋找 AppIcon.png 的實際位置
-          ICON_PATH=$(find "$PROJECT_ROOT" -name "AppIcon.png" | grep "AppIcon.appiconset" | head -n 1)
-          echo "找到的圖示位置: $ICON_PATH"
+          # 3. 指定圖片路徑
+          ICON_PATH="$PROJECT_ROOT/Aura.xcodeproj/AppIcon.appiconset/AppIcon.png"
           
-          if [ -z "$APP_PATH" ] || [ -z "$ICON_PATH" ]; then
-            echo "❌ 找不到檔案，請確認目錄結構"
+          echo "偵測到的 App 路徑: $APP_PATH"
+          echo "偵測到的圖示位置: $ICON_PATH"
+          
+          if [ ! -d "$APP_PATH" ]; then
+            echo "❌ 錯誤：找不到編譯出的 Aura.app，請檢查 build 指令是否成功。"
+            # 列出 build 目錄內容除錯
+            ls -R "$PROJECT_ROOT/build" || echo "build 目錄不存在"
             exit 1
           fi
           
-          # 4. 複製圖片並更名為 Icon.png
+          if [ ! -f "$ICON_PATH" ]; then
+            echo "❌ 錯誤：找不到圖片檔案"
+            exit 1
+          fi
+          
+          # 4. 執行注入
           cp "$ICON_PATH" "$APP_PATH/Icon.png"
           
-          # 5. 強制修改 Info.plist
-          # 確保 CFBundleIconFiles 存在
-          /usr/libexec/PlistBuddy -c "Add :CFBundleIconFiles array" "$APP_PATH/Info.plist" 2>/dev/null || true
-          /usr/libexec/PlistBuddy -c "Delete :CFBundleIconFiles" "$APP_PATH/Info.plist"
-          /usr/libexec/PlistBuddy -c "Add :CFBundleIconFiles array" "$APP_PATH/Info.plist"
-          /usr/libexec/PlistBuddy -c "Add :CFBundleIconFiles:0 string Icon.png" "$APP_PATH/Info.plist"
-          
-          # 移除會干擾的舊設定
-          /usr/libexec/PlistBuddy -c "Delete :CFBundleIconName" "$APP_PATH/Info.plist" 2>/dev/null || true
+          # 5. 修改 Info.plist (檢查路徑是否存在)
+          if [ -f "$APP_PATH/Info.plist" ]; then
+            /usr/libexec/PlistBuddy -c "Delete :CFBundleIconFiles" "$APP_PATH/Info.plist" 2>/dev/null || true
+            /usr/libexec/PlistBuddy -c "Add :CFBundleIconFiles array" "$APP_PATH/Info.plist"
+            /usr/libexec/PlistBuddy -c "Add :CFBundleIconFiles:0 string Icon.png" "$APP_PATH/Info.plist"
+          else
+            echo "❌ 錯誤：找不到 Info.plist"
+            exit 1
+          fi
 
       - name: Verify unsigned Release build
         run: >-
