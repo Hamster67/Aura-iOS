@@ -33,10 +33,10 @@ struct CustomHabitSheet: View {
                         .padding(.top, 12)
                     
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("設定新的意圖")
+                        Text("創建新的任務")
                             .font(.system(size: 24, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
-                        Text("為你的日常儀式注入能量核心")
+                        Text("為你的日常更注入能量！")
                             .font(.system(size: 14))
                             .foregroundStyle(.white.opacity(0.5))
                     }
@@ -45,7 +45,7 @@ struct CustomHabitSheet: View {
                     
                     // 輸入框卡片 - 採用極簡磨砂玻璃
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("意圖名稱")
+                        Text("任務名稱")
                             .font(.system(size: 12, weight: .semibold)).tracking(1.2)
                             .foregroundStyle(.white.opacity(0.4))
                         
@@ -66,7 +66,7 @@ struct CustomHabitSheet: View {
                     
                     // 圖示選取區
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("儀式標誌")
+                        Text("任務標誌")
                             .font(.system(size: 12, weight: .semibold)).tracking(1.2)
                             .foregroundStyle(.white.opacity(0.4))
                         
@@ -94,7 +94,7 @@ struct CustomHabitSheet: View {
                     
                     // 霓虹色彩選取區
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("能量色彩")
+                        Text("任務顏色")
                             .font(.system(size: 12, weight: .semibold)).tracking(1.2)
                             .foregroundStyle(.white.opacity(0.4))
                         
@@ -134,7 +134,7 @@ struct CustomHabitSheet: View {
                         modelContext.insert(newHabit)
                         dismiss()
                     } label: {
-                        Text("開啟意圖核心")
+                        Text("開啟任務")
                             .font(.system(size: 16, weight: .semibold, design: .rounded))
                             .foregroundStyle(.black)
                             .frame(maxWidth: .infinity, minHeight: 56)

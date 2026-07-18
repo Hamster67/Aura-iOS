@@ -66,12 +66,12 @@ struct RitualCelebrationView: View {
                 HStack(spacing: 16) {
                     Menu {
                         Section("背景樣式") {
-                            Button("極致純黑") { backgroundStyle = "PureBlack" }
-                            Button("未來感毛玻璃") { backgroundStyle = "Glassmorphism" }
+                            Button("純黑") { backgroundStyle = "PureBlack" }
+                            Button("毛玻璃") { backgroundStyle = "Glassmorphism" }
                         }
-                        Section("全域主題") {
-                            Button("液態霓虹 (Neon)") { globalTheme = "Neon" }
-                            Button("極簡單色 (Minimal)") { globalTheme = "Minimal" }
+                        Section("主題") {
+                            Button("霓虹 (Neon)") { globalTheme = "Neon" }
+                            Button("單色 (Minimal)") { globalTheme = "Minimal" }
                         }
                     } label: {
                         HStack(spacing: 6) {
