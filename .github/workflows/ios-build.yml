@@ -144,9 +144,10 @@ jobs:
 
       - name: Build Aura App
         run: |
-          # 強制全域限制 Xcode 每次只處理 1 個編譯工作項目
+          # 1. 確保全域與系統層級的工作項目數量被限制為 1
           defaults write com.apple.dt.Xcode IDEBuildOperationMaxNumberOfConcurrentCompileTasks 1
           
+          # 2. 使用全量單一模式與強制的編譯器旗標壓制多執行緒，繞過 Xcode Batch Mode 覆蓋 bug
           xcodebuild clean build \
             -project "$PROJECT" \
             -scheme "$SCHEME" \
@@ -158,11 +159,11 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGN_ENTITLEMENTS="" \
-            SWIFT_COMPILATION_MODE=incremental \
+            SWIFT_COMPILATION_MODE=wholemodule \
             SWIFT_OPTIMIZATION_LEVEL=-Onone \
             COMPILER_INDEX_STORE_ENABLE=NO \
             SWIFT_NUM_THREADS=1 \
-            OTHER_SWIFT_FLAGS="-j1 -disable-batch-mode -Xfrontend -serialize-debugging-options"
+            OTHER_SWIFT_FLAGS="-Xfrontend -parallel-transform-count=1"
 
       - name: Package for Sideloadly
         run: |
