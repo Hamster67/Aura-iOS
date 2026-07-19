@@ -12,8 +12,19 @@ struct CustomHabitSheet: View {
     @State private var selectedIcon = "bolt.shield"
     
     let neonColors = ["#00F2FE", "#F355DA", "#FF5E62", "#1ADF66", "#FFD200"]
-    let icons = ["bolt.shield", "sparkles", "brain.headlight", "heart.text.square", "moon.stars"]
-
+    // 精選常用捷徑/任務圖示資料庫 (涵蓋健康、正念、工作、生活、運動)
+    let icons = [
+        // 核心與能量
+        "bolt.shield", "sparkles", "brain.headlight", "heart.text.square", "moon.stars", "flame", "drop.fill", "sun.max",
+        // 健康與生活
+        "figure.mind.and.body", "figure.walk", "figure.run", "heart.fill", "pills", "bed.double.fill", "lungs.fill",
+        // 工作與學習
+        "book.closed", "doc.text", "laptopcomputer", "terminal", "pencil.and.outline", "graduationcap", "briefcase",
+        // 儀式感與日常
+        "cup.and.saucer", "fork.knife", "wineglass", "hourglass", "timer", "alarm", "bell", "calendar",
+        // 靜心與環境
+        "leaf", "tree", "wind", "guitars", "music.note", "house", "infinity", "scope", "eye"
+    ]
     var body: some View {
         NavigationStack {
             ZStack {
