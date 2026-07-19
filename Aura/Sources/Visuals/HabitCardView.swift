@@ -116,7 +116,8 @@ struct EditHabitSheet: View {
     @Environment(\.dismiss) private var dismiss
     
     @State private var searchText = ""
-    let neonColors = ["#00F2FE", "#F355DA", "#FF5E62", "#1ADF66", "#FFD200"]
+    // 💡 保持乾淨的 6 碼 Hex 格式
+    let neonColors = ["00F2FE", "F355DA", "FF5E62", "1ADF66", "FFD200"]
     let allSymbols = [
         "bolt.shield", "sparkles", "brain.headlight", "heart.text.square", "moon.stars", "flame", "drop.fill", "sun.max",
         "figure.mind.and.body", "figure.walk", "figure.run", "heart.fill", "pills", "bed.double.fill", "lungs.fill",
@@ -135,8 +136,9 @@ struct EditHabitSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
+                // 這裡使用我們自訂的安全色彩解析器
                 LinearGradient(
-                    colors: [Color(auraHex: "#0B0D17").opacity(0.85), Color(auraHex: "#16192B").opacity(0.85)],
+                    colors: [Color.fromHex("0B0D17").opacity(0.85), Color.fromHex("16192B").opacity(0.85)],
                     startPoint: .top,
                     endPoint: .bottom
                 )
@@ -165,14 +167,14 @@ struct EditHabitSheet: View {
                             TextField("輸入名稱...", text: $habit.title)
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundStyle(.white)
-                                .tint(Color(auraHex: habit.colorHex))
+                                .tint(Color.fromHex(habit.colorHex))
                         }
                         .padding(.all, 20)
                         .background(.white.opacity(0.03))
                         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                .stroke(Color(auraHex: habit.colorHex).opacity(0.2), lineWidth: 1)
+                                .stroke(Color.fromHex(habit.colorHex).opacity(0.2), lineWidth: 1)
                         )
                         .padding(.horizontal, 24)
                         
@@ -247,7 +249,7 @@ struct EditHabitSheet: View {
                         }
                         .padding(.horizontal, 24)
                         
-                        // 3. 顏色調整
+                        // 3. 顏色調整 (💡 已改用確保能出顏色的 Color.fromHex)
                         VStack(alignment: .leading, spacing: 12) {
                             Text("調整色彩")
                                 .font(.system(size: 12, weight: .semibold)).tracking(1.2)
@@ -261,12 +263,12 @@ struct EditHabitSheet: View {
                                         }
                                     } label: {
                                         Circle()
-                                            .fill(Color(auraHex: hex))
+                                            .fill(Color.fromHex(hex))
                                             .frame(width: 36, height: 36)
                                             .overlay(
                                                 Circle()
-                                                    .stroke(.white, lineWidth: habit.colorHex == hex ? 2 : 0)
-                                                    .scaleEffect(habit.colorHex == hex ? 1.15 : 1.0)
+                                                    .stroke(.white, lineWidth: habit.colorHex.replacingOccurrences(of: "#", with: "") == hex ? 2 : 0)
+                                                    .scaleEffect(habit.colorHex.replacingOccurrences(of: "#", with: "") == hex ? 1.15 : 1.0)
                                             )
                                     }
                                 }
@@ -301,13 +303,13 @@ struct EditHabitSheet: View {
                                         } label: {
                                             Image(systemName: icon)
                                                 .font(.system(size: 20))
-                                                .foregroundStyle(habit.iconName == icon ? Color(auraHex: habit.colorHex) : .white.opacity(0.4))
+                                                .foregroundStyle(habit.iconName == icon ? Color.fromHex(habit.colorHex) : .white.opacity(0.4))
                                                 .frame(width: 46, height: 46)
-                                                .background(habit.iconName == icon ? Color(auraHex: habit.colorHex).opacity(0.15) : Color.white.opacity(0.04))
+                                                .background(habit.iconName == icon ? Color.fromHex(habit.colorHex).opacity(0.15) : Color.white.opacity(0.04))
                                                 .clipShape(Circle())
                                                 .overlay(
                                                     Circle()
-                                                        .stroke(Color(auraHex: habit.colorHex).opacity(habit.iconName == icon ? 0.5 : 0), lineWidth: 1)
+                                                        .stroke(Color.fromHex(habit.colorHex).opacity(habit.iconName == icon ? 0.5 : 0), lineWidth: 1)
                                                 )
                                         }
                                     }
@@ -327,7 +329,7 @@ struct EditHabitSheet: View {
                                 .font(.system(size: 16, weight: .semibold, design: .rounded))
                                 .foregroundStyle(.black)
                                 .frame(maxWidth: .infinity, minHeight: 56)
-                                .background(Color(auraHex: habit.colorHex))
+                                .background(Color.fromHex(habit.colorHex))
                                 .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
                         }
                         .padding(.horizontal, 24)
@@ -337,5 +339,29 @@ struct EditHabitSheet: View {
             }
         }
         .presentationBackground(.clear)
+    }
+}
+
+// 💡 專屬的安全色彩擴充功能，避開專案原初始化器的任何潛在干擾
+fileprivate extension Color {
+    static func fromHex(_ hexStr: String) -> Color {
+        var cleanHex = hexStr.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        if cleanHex.hasPrefix("#") {
+            cleanHex.remove(at: cleanHex.startIndex)
+        }
+        
+        // 確保長度正確
+        if cleanHex.count != 6 {
+            return Color.gray // Fallback 預設安全色
+        }
+        
+        var rgbValue: UInt64 = 0
+        Scanner(string: cleanHex).scanHexInt64(&rgbValue)
+        
+        let r = Double((rgbValue & 0xFF0000) >> 16) / 255.0
+        let g = Double((rgbValue & 0x00FF00) >> 8) / 255.0
+        let b = Double(rgbValue & 0x0000FF) / 255.0
+        
+        return Color(red: r, green: g, blue: b)
     }
 }
