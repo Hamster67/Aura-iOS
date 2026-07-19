@@ -26,9 +26,9 @@ struct HabitCardView: View {
                 HStack(spacing: 14) {
                     Image(systemName: habit.iconName)
                         .font(.system(size: 20))
-                        .foregroundStyle(Color(hex: habit.colorHex)) // 💡 修正：加上 hex 標籤
+                        .foregroundStyle(Color(auraHex: habit.colorHex)) // 💡 使用專屬安全解析
                         .frame(width: 44, height: 44)
-                        .background(Color(hex: habit.colorHex).opacity(0.12), in: Circle()) // 💡 修正：加上 hex 標籤
+                        .background(Color(auraHex: habit.colorHex).opacity(0.12), in: Circle())
                     
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 6) {
@@ -135,7 +135,6 @@ struct EditHabitSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // 深色漸層背景 + 毛玻璃底層
                 LinearGradient(
                     colors: [Color("#0B0D17").opacity(0.85), Color("#16192B").opacity(0.85)],
                     startPoint: .top,
@@ -166,14 +165,14 @@ struct EditHabitSheet: View {
                             TextField("輸入名稱...", text: $habit.title)
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundStyle(.white)
-                                .tint(Color(hex: habit.colorHex)) // 💡 修正：加上 hex 標籤
+                                .tint(Color(auraHex: habit.colorHex))
                         }
                         .padding(.all, 20)
                         .background(.white.opacity(0.03))
                         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                .stroke(Color(hex: habit.colorHex).opacity(0.2), lineWidth: 1) // 💡 修正：加上 hex 標籤
+                                .stroke(Color(auraHex: habit.colorHex).opacity(0.2), lineWidth: 1)
                         )
                         .padding(.horizontal, 24)
                         
@@ -262,7 +261,7 @@ struct EditHabitSheet: View {
                                         }
                                     } label: {
                                         Circle()
-                                            .fill(Color(hex: hex)) // 💡 修正：加上 hex 標籤
+                                            .fill(Color(auraHex: hex))
                                             .frame(width: 36, height: 36)
                                             .overlay(
                                                 Circle()
@@ -302,13 +301,13 @@ struct EditHabitSheet: View {
                                         } label: {
                                             Image(systemName: icon)
                                                 .font(.system(size: 20))
-                                                .foregroundStyle(habit.iconName == icon ? Color(hex: habit.colorHex) : .white.opacity(0.4)) // 💡 修正：加上 hex 標籤
+                                                .foregroundStyle(habit.iconName == icon ? Color(auraHex: habit.colorHex) : .white.opacity(0.4))
                                                 .frame(width: 46, height: 46)
-                                                .background(habit.iconName == icon ? Color(hex: habit.colorHex).opacity(0.15) : Color.white.opacity(0.04)) // 💡 修正：加上 hex 標籤
+                                                .background(habit.iconName == icon ? Color(auraHex: habit.colorHex).opacity(0.15) : Color.white.opacity(0.04))
                                                 .clipShape(Circle())
                                                 .overlay(
                                                     Circle()
-                                                        .stroke(Color(hex: habit.colorHex).opacity(habit.iconName == icon ? 0.5 : 0), lineWidth: 1) // 💡 修正：加上 hex 標籤
+                                                        .stroke(Color(auraHex: habit.colorHex).opacity(habit.iconName == icon ? 0.5 : 0), lineWidth: 1)
                                                 )
                                         }
                                     }
@@ -328,7 +327,7 @@ struct EditHabitSheet: View {
                                 .font(.system(size: 16, weight: .semibold, design: .rounded))
                                 .foregroundStyle(.black)
                                 .frame(maxWidth: .infinity, minHeight: 56)
-                                .background(Color(hex: habit.colorHex)) // 💡 修正：加上 hex 標籤
+                                .background(Color(auraHex: habit.colorHex))
                                 .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
                         }
                         .padding(.horizontal, 24)
@@ -337,6 +336,33 @@ struct EditHabitSheet: View {
                 }
             }
         }
-        .presentationBackground(.clear) // 🔥 強制移除系統底層純白背景，還原編輯選單的毛玻璃
+        .presentationBackground(.clear)
+    }
+}
+
+// 💡 內建專屬安全十六進制顏色轉換器，保證實機編譯通過且色彩正確顯示
+fileprivate extension Color {
+    init(auraHex: String) {
+        let hex = auraHex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3: // RGB (12-bit)
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6: // RGB (24-bit)
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8: // ARGB (32-bit)
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (1, 1, 1, 1)
+        }
+        self.init(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue: Double(b) / 255,
+            opacity: Double(a) / 255
+        )
     }
 }
