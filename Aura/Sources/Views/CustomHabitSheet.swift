@@ -16,7 +16,7 @@ struct CustomHabitSheet: View {
     @State private var searchText = ""
     let columns = [GridItem(.adaptive(minimum: 50))]
     
-    let neonColors = ["#00F2FE", "#F355DA", "#FF5E62", "#1ADF66", "#FFD200"]
+    let neonColors = ["00F2FE", "F355DA", "FF5E62", "1ADF66", "FFD200"]
     
     let icons = [
         "bolt.shield", "sparkles", "brain.headlight", "heart.text.square", "moon.stars", "flame", "drop.fill", "sun.max",
