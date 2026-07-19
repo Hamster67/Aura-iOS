@@ -40,14 +40,16 @@ struct HabitCardView: View {
                             if habit.isPaused {
                                 Text("已暫停")
                                     .font(.system(size: 10, weight: .bold))
-                                    .padding(.horizontal, 6, .vertical, 2)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
                                     .background(.orange.opacity(0.2))
                                     .foregroundStyle(.orange)
                                     .clipShape(Capsule())
                             } else if !habit.isRequiredToday {
                                 Text("已排解")
                                     .font(.system(size: 10, weight: .bold))
-                                    .padding(.horizontal, 6, .vertical, 2)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
                                     .background(.white.opacity(0.1))
                                     .foregroundStyle(.white.opacity(0.4))
                                     .clipShape(Capsule())
@@ -72,7 +74,7 @@ struct HabitCardView: View {
                 .contentShape(Rectangle()) 
             }
             .buttonStyle(.plain)
-            .disabled(habit.isPaused) // 暫停時禁用打卡觸發
+            .disabled(habit.isPaused)
             
             // 右側：獨立的操作選單
             Menu {
@@ -109,7 +111,6 @@ struct HabitCardView: View {
     }
 }
 
-/// 支援多週期提醒設定、狀態管理的編輯視窗
 struct EditHabitSheet: View {
     @Bindable var habit: HabitModel
     @Environment(\.dismiss) private var dismiss
@@ -257,85 +258,86 @@ struct EditHabitSheet: View {
                                 .font(.system(size: 12, weight: .semibold)).tracking(1.2)
                                 .foregroundStyle(.white.opacity(0.4))
                             
-                        HStack(spacing: 18) {
-                            ForEach(neonColors, id: \.self) { hex in
-                                Button {
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                                        habit.colorHex = hex
-                                    }
-                                } label: {
-                                    Circle()
-                                        .fill(Color(hex))
-                                        .frame(width: 36, height: 36)
-                                        .overlay(
-                                            Circle()
-                                                .stroke(.white, lineWidth: habit.colorHex == hex ? 2 : 0)
-                                                .scaleEffect(habit.colorHex == hex ? 1.15 : 1.0)
-                                        )
-                                }
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 24)
-                    
-                    // 4. 圖示搜尋與滾動選擇區
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("變更標誌")
-                            .font(.system(size: 12, weight: .semibold)).tracking(1.2)
-                            .foregroundStyle(.white.opacity(0.4))
-                        
-                        HStack {
-                            Image(systemName: "magnifyingglass")
-                                .foregroundStyle(.white.opacity(0.3))
-                            TextField("搜尋圖示...", text: $searchText)
-                                .font(.system(size: 14))
-                                .foregroundStyle(.white)
-                        }
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 14)
-                        .background(.white.opacity(0.05))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        
-                        ScrollView {
-                            LazyVGrid(columns: columns, spacing: 14) {
-                                ForEach(filteredSymbols, id: \.self) { icon in
+                            HStack(spacing: 18) {
+                                ForEach(neonColors, id: \.self) { hex in
                                     Button {
-                                        habit.iconName = icon
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                            habit.colorHex = hex
+                                        }
                                     } label: {
-                                        Image(systemName: icon)
-                                            .font(.system(size: 20))
-                                            .foregroundStyle(habit.iconName == icon ? Color(habit.colorHex) : .white.opacity(0.4))
-                                            .frame(width: 46, height: 46)
-                                            .background(habit.iconName == icon ? Color(habit.colorHex).opacity(0.15) : Color.white.opacity(0.04))
-                                            .clipShape(Circle())
+                                        Circle()
+                                            .fill(Color(hex))
+                                            .frame(width: 36, height: 36)
                                             .overlay(
                                                 Circle()
-                                                    .stroke(Color(habit.colorHex).opacity(habit.iconName == icon ? 0.5 : 0), lineWidth: 1)
+                                                    .stroke(.white, lineWidth: habit.colorHex == hex ? 2 : 0)
+                                                    .scaleEffect(habit.colorHex == hex ? 1.15 : 1.0)
                                             )
                                     }
                                 }
                             }
-                            .padding(.vertical, 6)
                         }
-                        .frame(maxHeight: 180)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 24)
+                        
+                        // 4. 圖示搜尋與滾動選擇區
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("變更標誌")
+                                .font(.system(size: 12, weight: .semibold)).tracking(1.2)
+                                .foregroundStyle(.white.opacity(0.4))
+                            
+                            HStack {
+                                Image(systemName: "magnifyingglass")
+                                    .foregroundStyle(.white.opacity(0.3))
+                                TextField("搜尋圖示...", text: $searchText)
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(.white)
+                            }
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 14)
+                            .background(.white.opacity(0.05))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            
+                            ScrollView {
+                                LazyVGrid(columns: columns, spacing: 14) {
+                                    ForEach(filteredSymbols, id: \.self) { icon in
+                                        Button {
+                                            habit.iconName = icon
+                                        } label: {
+                                            Image(systemName: icon)
+                                                .font(.system(size: 20))
+                                                .foregroundStyle(habit.iconName == icon ? Color(habit.colorHex) : .white.opacity(0.4))
+                                                .frame(width: 46, height: 46)
+                                                .background(habit.iconName == icon ? Color(habit.colorHex).opacity(0.15) : Color.white.opacity(0.04))
+                                                .clipShape(Circle())
+                                                .overlay(
+                                                    Circle()
+                                                        .stroke(Color(habit.colorHex).opacity(habit.iconName == icon ? 0.5 : 0), lineWidth: 1)
+                                                )
+                                        }
+                                    }
+                                }
+                                .padding(.vertical, 6)
+                            }
+                            .frame(maxHeight: 180)
+                        }
+                        .padding(.horizontal, 24)
+                        
+                        Spacer()
+                        
+                        Button {
+                            dismiss()
+                        } label: {
+                            Text("儲存變更")
+                                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                                .foregroundStyle(.black)
+                                .frame(maxWidth: .infinity, minHeight: 56)
+                                .background(Color(habit.colorHex))
+                                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 24)
                     }
-                    .padding(.horizontal, 24)
-                    
-                    Spacer()
-                    
-                    Button {
-                        dismiss()
-                    } label: {
-                        Text("儲存變更")
-                            .font(.system(size: 16, weight: .semibold, design: .rounded))
-                            .foregroundStyle(.black)
-                            .frame(maxWidth: .infinity, minHeight: 56)
-                            .background(Color(habit.colorHex))
-                            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 24)
                 }
             }
         }

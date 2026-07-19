@@ -47,7 +47,7 @@ struct CustomHabitSheet: View {
             ZStack {
                 // 深色極簡背景
                 LinearGradient(
-                    colors: [Color(hex: "#0B0D17"), Color(hex: "#16192B")],
+                    colors: [Color("#0B0D17"), Color("#16192B")],
                     startPoint: .top,
                     endPoint: .bottom
                 )
