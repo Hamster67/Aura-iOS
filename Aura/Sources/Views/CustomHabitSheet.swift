@@ -9,31 +9,23 @@ struct CustomHabitSheet: View {
     @State private var selectedColorHex = "#00F2FE" 
     @State private var selectedIcon = "bolt.shield"
     
-    // 週期提醒與長週期設定狀態
     @State private var selectedRecurrence: RecurrenceType = .daily
     @State private var customIntervalYears = 4
     @State private var targetDate = Date()
     
-    // 搜尋與網格佈局狀態
     @State private var searchText = ""
     let columns = [GridItem(.adaptive(minimum: 50))]
     
     let neonColors = ["#00F2FE", "#F355DA", "#FF5E62", "#1ADF66", "#FFD200"]
     
     let icons = [
-        // 核心與能量
         "bolt.shield", "sparkles", "brain.headlight", "heart.text.square", "moon.stars", "flame", "drop.fill", "sun.max",
-        // 健康與生活
         "figure.mind.and.body", "figure.walk", "figure.run", "heart.fill", "pills", "bed.double.fill", "lungs.fill",
-        // 工作與學習
         "book.closed", "doc.text", "laptopcomputer", "terminal", "pencil.and.outline", "graduationcap", "briefcase",
-        // 儀式感與日常
         "cup.and.saucer", "fork.knife", "wineglass", "hourglass", "timer", "alarm", "bell", "calendar",
-        // 靜心與環境
         "leaf", "tree", "wind", "guitars", "music.note", "house", "infinity", "scope", "eye"
     ]
     
-    // 動態過濾圖示
     var filteredSymbols: [String] {
         if searchText.isEmpty {
             return icons
@@ -45,17 +37,17 @@ struct CustomHabitSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // 深色極簡背景
+                // 深色漸層背景 + 毛玻璃底層
                 LinearGradient(
-                    colors: [Color("#0B0D17"), Color("#16192B")],
+                    colors: [Color("#0B0D17").opacity(0.85), Color("#16192B").opacity(0.85)],
                     startPoint: .top,
                     endPoint: .bottom
                 )
+                .background(.ultraThinMaterial)
                 .ignoresSafeArea()
                 
                 ScrollView {
                     VStack(spacing: 24) {
-                        // 頂部裝飾條
                         Capsule()
                             .fill(.white.opacity(0.15))
                             .frame(width: 40, height: 4)
@@ -72,7 +64,7 @@ struct CustomHabitSheet: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 24)
                         
-                        // 1. 任務名稱輸入框 - 磨砂玻璃質感
+                        // 1. 任務名稱輸入框
                         VStack(alignment: .leading, spacing: 12) {
                             Text("任務名稱")
                                 .font(.system(size: 12, weight: .semibold)).tracking(1.2)
@@ -85,7 +77,6 @@ struct CustomHabitSheet: View {
                         }
                         .padding(.all, 20)
                         .background(.white.opacity(0.03))
-                        .background(.ultraThinMaterial)
                         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -242,5 +233,6 @@ struct CustomHabitSheet: View {
             }
             .navigationBarHidden(true)
         }
+        .presentationBackground(.clear) // 🔥 強制移除系統底層純白背景，還原毛玻璃
     }
 }

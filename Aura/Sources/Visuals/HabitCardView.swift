@@ -116,9 +116,7 @@ struct EditHabitSheet: View {
     @Environment(\.dismiss) private var dismiss
     
     @State private var searchText = ""
-    
     let neonColors = ["#00F2FE", "#F355DA", "#FF5E62", "#1ADF66", "#FFD200"]
-    
     let allSymbols = [
         "bolt.shield", "sparkles", "brain.headlight", "heart.text.square", "moon.stars", "flame", "drop.fill", "sun.max",
         "figure.mind.and.body", "figure.walk", "figure.run", "heart.fill", "pills", "bed.double.fill", "lungs.fill",
@@ -128,11 +126,8 @@ struct EditHabitSheet: View {
     ]
     
     var filteredSymbols: [String] {
-        if searchText.isEmpty {
-            return allSymbols
-        } else {
-            return allSymbols.filter { $0.lowercased().contains(searchText.lowercased()) }
-        }
+        if searchText.isEmpty { return allSymbols }
+        else { return allSymbols.filter { $0.lowercased().contains(searchText.lowercased()) } }
     }
     
     let columns = [GridItem(.adaptive(minimum: 50))]
@@ -140,11 +135,13 @@ struct EditHabitSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
+                // 深色漸層背景 + 毛玻璃底層
                 LinearGradient(
-                    colors: [Color("#0B0D17"), Color("#16192B")],
+                    colors: [Color("#0B0D17").opacity(0.85), Color("#16192B").opacity(0.85)],
                     startPoint: .top,
                     endPoint: .bottom
                 )
+                .background(.ultraThinMaterial)
                 .ignoresSafeArea()
                 
                 ScrollView {
@@ -173,7 +170,6 @@ struct EditHabitSheet: View {
                         }
                         .padding(.all, 20)
                         .background(.white.opacity(0.03))
-                        .background(.ultraThinMaterial)
                         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -341,5 +337,6 @@ struct EditHabitSheet: View {
                 }
             }
         }
+        .presentationBackground(.clear) // 🔥 強制移除系統底層純白背景，還原編輯選單的毛玻璃
     }
 }
