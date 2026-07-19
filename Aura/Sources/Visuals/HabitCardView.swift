@@ -26,7 +26,7 @@ struct HabitCardView: View {
                 HStack(spacing: 14) {
                     Image(systemName: habit.iconName)
                         .font(.system(size: 20))
-                        .foregroundStyle(Color(auraHex: habit.colorHex)) // 💡 使用專屬安全解析
+                        .foregroundStyle(Color(auraHex: habit.colorHex)) // 💡 使用專案內建的 auraHex
                         .frame(width: 44, height: 44)
                         .background(Color(auraHex: habit.colorHex).opacity(0.12), in: Circle())
                     
@@ -136,7 +136,7 @@ struct EditHabitSheet: View {
         NavigationStack {
             ZStack {
                 LinearGradient(
-                    colors: [Color("#0B0D17").opacity(0.85), Color("#16192B").opacity(0.85)],
+                    colors: [Color(auraHex: "#0B0D17").opacity(0.85), Color(auraHex: "#16192B").opacity(0.85)],
                     startPoint: .top,
                     endPoint: .bottom
                 )
@@ -337,32 +337,5 @@ struct EditHabitSheet: View {
             }
         }
         .presentationBackground(.clear)
-    }
-}
-
-// 💡 內建專屬安全十六進制顏色轉換器，保證實機編譯通過且色彩正確顯示
-fileprivate extension Color {
-    init(auraHex: String) {
-        let hex = auraHex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let a, r, g, b: UInt64
-        switch hex.count {
-        case 3: // RGB (12-bit)
-            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6: // RGB (24-bit)
-            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: // ARGB (32-bit)
-            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default:
-            (a, r, g, b) = (1, 1, 1, 1)
-        }
-        self.init(
-            .sRGB,
-            red: Double(r) / 255,
-            green: Double(g) / 255,
-            blue: Double(b) / 255,
-            opacity: Double(a) / 255
-        )
     }
 }
