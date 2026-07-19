@@ -81,7 +81,7 @@ struct CustomHabitSheet: View {
                             TextField("例如：晨間冥想、奧運特訓、深呼吸...", text: $title)
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundStyle(.white)
-                                .tint(Color(hex: selectedColorHex))
+                                .tint(Color(selectedColorHex))
                         }
                         .padding(.all, 20)
                         .background(.white.opacity(0.03))
@@ -89,7 +89,7 @@ struct CustomHabitSheet: View {
                         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                .stroke(Color(hex: selectedColorHex).opacity(0.2), lineWidth: 1)
+                                .stroke(Color(selectedColorHex).opacity(0.2), lineWidth: 1)
                         )
                         .padding(.horizontal, 24)
                         
@@ -149,9 +149,9 @@ struct CustomHabitSheet: View {
                                         }
                                     } label: {
                                         Circle()
-                                            .fill(Color(hex: hex))
+                                            .fill(Color(hex))
                                             .frame(width: 38, height: 38)
-                                            .shadow(color: Color(hex: hex).opacity(selectedColorHex == hex ? 0.6 : 0), radius: 10)
+                                            .shadow(color: Color(hex).opacity(selectedColorHex == hex ? 0.6 : 0), radius: 10)
                                             .overlay(
                                                 Circle()
                                                     .stroke(.white, lineWidth: selectedColorHex == hex ? 2 : 0)
@@ -190,13 +190,13 @@ struct CustomHabitSheet: View {
                                         } label: {
                                             Image(systemName: icon)
                                                 .font(.system(size: 20))
-                                                .foregroundStyle(selectedIcon == icon ? Color(hex: selectedColorHex) : .white.opacity(0.4))
+                                                .foregroundStyle(selectedIcon == icon ? Color(selectedColorHex) : .white.opacity(0.4))
                                                 .frame(width: 46, height: 46)
-                                                .background(selectedIcon == icon ? Color(hex: selectedColorHex).opacity(0.15) : Color.white.opacity(0.04))
+                                                .background(selectedIcon == icon ? Color(selectedColorHex).opacity(0.15) : Color.white.opacity(0.04))
                                                 .clipShape(Circle())
                                                 .overlay(
                                                     Circle()
-                                                        .stroke(Color(hex: selectedColorHex).opacity(selectedIcon == icon ? 0.5 : 0), lineWidth: 1)
+                                                        .stroke(Color(selectedColorHex).opacity(selectedIcon == icon ? 0.5 : 0), lineWidth: 1)
                                                 )
                                         }
                                     }
@@ -228,8 +228,8 @@ struct CustomHabitSheet: View {
                                 .foregroundStyle(.black)
                                 .frame(maxWidth: .infinity, minHeight: 56)
                                 .background(
-                                    Color(hex: selectedColorHex)
-                                        .shadow(color: Color(hex: selectedColorHex).opacity(0.4), radius: 20, y: 5)
+                                    Color(selectedColorHex)
+                                        .shadow(color: Color(selectedColorHex).opacity(0.4), radius: 20, y: 5)
                                 )
                                 .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
                         }
