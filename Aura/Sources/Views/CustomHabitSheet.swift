@@ -81,24 +81,42 @@ struct CustomHabitSheet: View {
                             .font(.system(size: 12, weight: .semibold)).tracking(1.2)
                             .foregroundStyle(.white.opacity(0.4))
                         
-                        HStack(spacing: 16) {
-                            ForEach(icons, id: \.self) { icon in
-                                Button {
-                                    selectedIcon = icon
-                                } label: {
-                                    Image(systemName: icon)
-                                        .font(.system(size: 20, weight: .medium))
-                                        .foregroundStyle(selectedIcon == icon ? Color(hex: selectedColorHex) : .white.opacity(0.4))
-                                        .frame(width: 46, height: 46)
-                                        .background(selectedIcon == icon ? Color(hex: selectedColorHex).opacity(0.15) : Color.white.opacity(0.05))
-                                        .clipShape(Circle())
-                                        .overlay(
-                                            Circle()
-                                                .stroke(Color(hex: selectedColorHex).opacity(selectedIcon == icon ? 0.6 : 0), lineWidth: 1)
-                                        )
+                                                // 搜尋列
+                        HStack {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundStyle(.white.opacity(0.3))
+                            TextField("搜尋圖示... (輸入英文例如 heart, run)", text: $searchText)
+                                .font(.system(size: 14))
+                                .foregroundStyle(.white)
+                        }
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 14)
+                        .background(.white.opacity(0.05))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        
+                        // 可滾動的網格
+                        ScrollView {
+                            LazyVGrid(columns: columns, spacing: 14) {
+                                ForEach(filteredSymbols, id: \.self) { icon in
+                                    Button {
+                                        habit.iconName = icon
+                                    } label: {
+                                        Image(systemName: icon)
+                                            .font(.system(size: 20))
+                                            .foregroundStyle(habit.iconName == icon ? Color(hex: habit.colorHex) : .white.opacity(0.4))
+                                            .frame(width: 46, height: 46)
+                                            .background(habit.iconName == icon ? Color(hex: habit.colorHex).opacity(0.15) : Color.white.opacity(0.04))
+                                            .clipShape(Circle())
+                                            .overlay(
+                                                Circle()
+                                                    .stroke(Color(hex: habit.colorHex).opacity(habit.iconName == icon ? 0.5 : 0), lineWidth: 1)
+                                            )
+                                    }
                                 }
                             }
+                            .padding(.vertical, 6)
                         }
+                        .frame(maxHeight: 180)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 24)
