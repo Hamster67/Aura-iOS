@@ -119,7 +119,7 @@ struct EditHabitSheet: View {
     // 💡 保持乾淨的 6 碼 Hex 格式
     let neonColors = ["00F2FE", "F355DA", "FF5E62", "1ADF66", "FFD200"]
     let allSymbols = [
-        "bolt.shield", "sparkles", "brain.headlight", "heart.text.square", "moon.stars", "flame", "drop.fill", "sun.max",
+        "bolt.shield", "sparkles", "brain.headsparks", "heart.text.square", "moon.stars", "flame", "drop.fill", "sun.max",
         "figure.mind.and.body", "figure.walk", "figure.run", "heart.fill", "pills", "bed.double.fill", "lungs.fill",
         "book.closed", "doc.text", "laptopcomputer", "terminal", "pencil.and.outline", "graduationcap", "briefcase",
         "cup.and.saucer", "fork.knife", "wineglass", "hourglass", "timer", "alarm", "bell", "calendar",
