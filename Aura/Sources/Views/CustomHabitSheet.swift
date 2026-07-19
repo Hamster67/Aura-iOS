@@ -9,12 +9,12 @@ struct CustomHabitSheet: View {
     @State private var selectedColorHex = "#00F2FE" 
     @State private var selectedIcon = "bolt.shield"
     
-    // 🔥 新增：週期提醒與長週期設定狀態
+    // 週期提醒與長週期設定狀態
     @State private var selectedRecurrence: RecurrenceType = .daily
     @State private var customIntervalYears = 4
     @State private var targetDate = Date()
     
-    // 🔥 修復編譯：新增搜尋與網格佈局狀態
+    // 搜尋與網格佈局狀態
     @State private var searchText = ""
     let columns = [GridItem(.adaptive(minimum: 50))]
     
@@ -33,7 +33,7 @@ struct CustomHabitSheet: View {
         "leaf", "tree", "wind", "guitars", "music.note", "house", "infinity", "scope", "eye"
     ]
     
-    // 🔥 修復編譯：動態過濾圖示
+    // 動態過濾圖示
     var filteredSymbols: [String] {
         if searchText.isEmpty {
             return icons
@@ -45,6 +45,7 @@ struct CustomHabitSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
+                // 深色極簡背景
                 LinearGradient(
                     colors: [Color(hex: "#0B0D17"), Color(hex: "#16192B")],
                     startPoint: .top,
@@ -54,6 +55,7 @@ struct CustomHabitSheet: View {
                 
                 ScrollView {
                     VStack(spacing: 24) {
+                        // 頂部裝飾條
                         Capsule()
                             .fill(.white.opacity(0.15))
                             .frame(width: 40, height: 4)
@@ -70,7 +72,7 @@ struct CustomHabitSheet: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 24)
                         
-                        // 1. 任務名稱
+                        // 1. 任務名稱輸入框 - 磨砂玻璃質感
                         VStack(alignment: .leading, spacing: 12) {
                             Text("任務名稱")
                                 .font(.system(size: 12, weight: .semibold)).tracking(1.2)
@@ -91,7 +93,7 @@ struct CustomHabitSheet: View {
                         )
                         .padding(.horizontal, 24)
                         
-                        // 🔥 2. 全新引進：週期與提醒機制區塊
+                        // 2. 週期與提醒機制設定
                         VStack(alignment: .leading, spacing: 12) {
                             Text("提醒週期設定")
                                 .font(.system(size: 12, weight: .semibold)).tracking(1.2)
@@ -120,7 +122,7 @@ struct CustomHabitSheet: View {
                                     DatePicker(
                                         selectedRecurrence == .monthly ? "每月提醒日" : "目標指定日期",
                                         selection: $targetDate,
-                                        displayedComponents: selectedRecurrence == .monthly ? [.date] : [.date]
+                                        displayedComponents: .date
                                     )
                                     .environment(\.colorScheme, .dark)
                                     .font(.system(size: 14))
@@ -133,7 +135,7 @@ struct CustomHabitSheet: View {
                         }
                         .padding(.horizontal, 24)
                         
-                        // 3. 任務顏色
+                        // 3. 霓虹色彩選取區
                         VStack(alignment: .leading, spacing: 12) {
                             Text("任務顏色")
                                 .font(.system(size: 12, weight: .semibold)).tracking(1.2)
@@ -154,7 +156,7 @@ struct CustomHabitSheet: View {
                                                 Circle()
                                                     .stroke(.white, lineWidth: selectedColorHex == hex ? 2 : 0)
                                                     .scaleEffect(selectedColorHex == hex ? 1.15 : 1.0)
-                                            )
+                                        )
                                     }
                                 }
                             }
@@ -162,7 +164,7 @@ struct CustomHabitSheet: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 24)
                         
-                        // 4. 圖示選取與搜尋區（已修正變數繫結）
+                        // 4. 圖示選取與搜尋區
                         VStack(alignment: .leading, spacing: 12) {
                             Text("任務標誌")
                                 .font(.system(size: 12, weight: .semibold)).tracking(1.2)
@@ -205,11 +207,10 @@ struct CustomHabitSheet: View {
                         }
                         .padding(.horizontal, 24)
                         
-                        // 5. 建立按鈕
+                        // 5. 建立與開啟按鈕
                         Button {
                             guard !title.isEmpty else { return }
                             
-                            // 將新週期的變數完全寫入 SwiftData 模型
                             let newHabit = HabitModel(
                                 title: title,
                                 progress: 0,
