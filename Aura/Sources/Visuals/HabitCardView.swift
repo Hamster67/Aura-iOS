@@ -26,9 +26,9 @@ struct HabitCardView: View {
                 HStack(spacing: 14) {
                     Image(systemName: habit.iconName)
                         .font(.system(size: 20))
-                        .foregroundStyle(Color(habit.colorHex))
+                        .foregroundStyle(Color(hex: habit.colorHex)) // 💡 修正：加上 hex 標籤
                         .frame(width: 44, height: 44)
-                        .background(Color(habit.colorHex).opacity(0.12), in: Circle())
+                        .background(Color(hex: habit.colorHex).opacity(0.12), in: Circle()) // 💡 修正：加上 hex 標籤
                     
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 6) {
@@ -166,14 +166,14 @@ struct EditHabitSheet: View {
                             TextField("輸入名稱...", text: $habit.title)
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundStyle(.white)
-                                .tint(Color(habit.colorHex))
+                                .tint(Color(hex: habit.colorHex)) // 💡 修正：加上 hex 標籤
                         }
                         .padding(.all, 20)
                         .background(.white.opacity(0.03))
                         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                .stroke(Color(habit.colorHex).opacity(0.2), lineWidth: 1)
+                                .stroke(Color(hex: habit.colorHex).opacity(0.2), lineWidth: 1) // 💡 修正：加上 hex 標籤
                         )
                         .padding(.horizontal, 24)
                         
@@ -262,7 +262,7 @@ struct EditHabitSheet: View {
                                         }
                                     } label: {
                                         Circle()
-                                            .fill(Color(hex))
+                                            .fill(Color(hex: hex)) // 💡 修正：加上 hex 標籤
                                             .frame(width: 36, height: 36)
                                             .overlay(
                                                 Circle()
@@ -302,13 +302,13 @@ struct EditHabitSheet: View {
                                         } label: {
                                             Image(systemName: icon)
                                                 .font(.system(size: 20))
-                                                .foregroundStyle(habit.iconName == icon ? Color(habit.colorHex) : .white.opacity(0.4))
+                                                .foregroundStyle(habit.iconName == icon ? Color(hex: habit.colorHex) : .white.opacity(0.4)) // 💡 修正：加上 hex 標籤
                                                 .frame(width: 46, height: 46)
-                                                .background(habit.iconName == icon ? Color(habit.colorHex).opacity(0.15) : Color.white.opacity(0.04))
+                                                .background(habit.iconName == icon ? Color(hex: habit.colorHex).opacity(0.15) : Color.white.opacity(0.04)) // 💡 修正：加上 hex 標籤
                                                 .clipShape(Circle())
                                                 .overlay(
                                                     Circle()
-                                                        .stroke(Color(habit.colorHex).opacity(habit.iconName == icon ? 0.5 : 0), lineWidth: 1)
+                                                        .stroke(Color(hex: habit.colorHex).opacity(habit.iconName == icon ? 0.5 : 0), lineWidth: 1) // 💡 修正：加上 hex 標籤
                                                 )
                                         }
                                     }
@@ -328,7 +328,7 @@ struct EditHabitSheet: View {
                                 .font(.system(size: 16, weight: .semibold, design: .rounded))
                                 .foregroundStyle(.black)
                                 .frame(maxWidth: .infinity, minHeight: 56)
-                                .background(Color(habit.colorHex))
+                                .background(Color(hex: habit.colorHex)) // 💡 修正：加上 hex 標籤
                                 .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
                         }
                         .padding(.horizontal, 24)
