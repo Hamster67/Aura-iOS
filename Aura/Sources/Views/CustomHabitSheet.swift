@@ -6,7 +6,8 @@ struct CustomHabitSheet: View {
     @Environment(\.dismiss) private var dismiss
     
     @State private var title = ""
-    @State private var selectedColorHex = "#00F2FE" 
+    // 💡 統一格式：預設值去掉 #，與 neonColors 保持一致
+    @State private var selectedColorHex = "00F2FE" 
     @State private var selectedIcon = "bolt.shield"
     
     @State private var selectedRecurrence: RecurrenceType = .daily
@@ -16,6 +17,7 @@ struct CustomHabitSheet: View {
     @State private var searchText = ""
     let columns = [GridItem(.adaptive(minimum: 50))]
     
+    // 💡 乾淨的 6 碼 Hex 格式
     let neonColors = ["00F2FE", "F355DA", "FF5E62", "1ADF66", "FFD200"]
     
     let icons = [
@@ -37,9 +39,9 @@ struct CustomHabitSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // 深色漸層背景 + 毛玻璃底層
+                // 深色漸層背景 + 毛玻璃底層 (💡 改用安全色彩解析)
                 LinearGradient(
-                    colors: [Color("#0B0D17").opacity(0.85), Color("#16192B").opacity(0.85)],
+                    colors: [Color.fromCustomHex("0B0D17").opacity(0.85), Color.fromCustomHex("16192B").opacity(0.85)],
                     startPoint: .top,
                     endPoint: .bottom
                 )
@@ -73,14 +75,14 @@ struct CustomHabitSheet: View {
                             TextField("例如：晨間冥想、奧運特訓、深呼吸...", text: $title)
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundStyle(.white)
-                                .tint(Color(selectedColorHex))
+                                .tint(Color.fromCustomHex(selectedColorHex))
                         }
                         .padding(.all, 20)
                         .background(.white.opacity(0.03))
                         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                .stroke(Color(selectedColorHex).opacity(0.2), lineWidth: 1)
+                                .stroke(Color.fromCustomHex(selectedColorHex).opacity(0.2), lineWidth: 1)
                         )
                         .padding(.horizontal, 24)
                         
@@ -126,7 +128,7 @@ struct CustomHabitSheet: View {
                         }
                         .padding(.horizontal, 24)
                         
-                        // 3. 霓虹色彩選取區
+                        // 3. 霓虹色彩選取區 (💡 已全面改用 Color.fromCustomHex)
                         VStack(alignment: .leading, spacing: 12) {
                             Text("任務顏色")
                                 .font(.system(size: 12, weight: .semibold)).tracking(1.2)
@@ -140,9 +142,9 @@ struct CustomHabitSheet: View {
                                         }
                                     } label: {
                                         Circle()
-                                            .fill(Color(hex))
+                                            .fill(Color.fromCustomHex(hex))
                                             .frame(width: 38, height: 38)
-                                            .shadow(color: Color(hex).opacity(selectedColorHex == hex ? 0.6 : 0), radius: 10)
+                                            .shadow(color: Color.fromCustomHex(hex).opacity(selectedColorHex == hex ? 0.6 : 0), radius: 10)
                                             .overlay(
                                                 Circle()
                                                     .stroke(.white, lineWidth: selectedColorHex == hex ? 2 : 0)
@@ -181,13 +183,13 @@ struct CustomHabitSheet: View {
                                         } label: {
                                             Image(systemName: icon)
                                                 .font(.system(size: 20))
-                                                .foregroundStyle(selectedIcon == icon ? Color(selectedColorHex) : .white.opacity(0.4))
+                                                .foregroundStyle(selectedIcon == icon ? Color.fromCustomHex(selectedColorHex) : .white.opacity(0.4))
                                                 .frame(width: 46, height: 46)
-                                                .background(selectedIcon == icon ? Color(selectedColorHex).opacity(0.15) : Color.white.opacity(0.04))
+                                                .background(selectedIcon == icon ? Color.fromCustomHex(selectedColorHex).opacity(0.15) : Color.white.opacity(0.04))
                                                 .clipShape(Circle())
                                                 .overlay(
                                                     Circle()
-                                                        .stroke(Color(selectedColorHex).opacity(selectedIcon == icon ? 0.5 : 0), lineWidth: 1)
+                                                        .stroke(Color.fromCustomHex(selectedColorHex).opacity(selectedIcon == icon ? 0.5 : 0), lineWidth: 1)
                                                 )
                                         }
                                     }
@@ -219,8 +221,8 @@ struct CustomHabitSheet: View {
                                 .foregroundStyle(.black)
                                 .frame(maxWidth: .infinity, minHeight: 56)
                                 .background(
-                                    Color(selectedColorHex)
-                                        .shadow(color: Color(selectedColorHex).opacity(0.4), radius: 20, y: 5)
+                                    Color.fromCustomHex(selectedColorHex)
+                                        .shadow(color: Color.fromCustomHex(selectedColorHex).opacity(0.4), radius: 20, y: 5)
                                 )
                                 .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
                         }
@@ -233,6 +235,51 @@ struct CustomHabitSheet: View {
             }
             .navigationBarHidden(true)
         }
-        .presentationBackground(.clear) // 🔥 強制移除系統底層純白背景，還原毛玻璃
+        .viewBackgroundClearModifier() // 🔥 改用自訂擴充來完美隱藏底層
     }
+}
+
+// 💡 專屬的安全色彩擴充功能，避開專案原初始化器的格式干擾
+fileprivate extension Color {
+    static func fromCustomHex(_ hexStr: String) -> Color {
+        var cleanHex = hexStr.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        if cleanHex.hasPrefix("#") {
+            cleanHex.remove(at: cleanHex.startIndex)
+        }
+        
+        if cleanHex.count != 6 {
+            return Color.gray
+        }
+        
+        var rgbValue: UInt64 = 0
+        Scanner(string: cleanHex).scanHexInt64(&rgbValue)
+        
+        let r = Double((rgbValue & 0xFF0000) >> 16) / 255.0
+        let g = Double((rgbValue & 0x00FF00) >> 8) / 255.0
+        let b = Double(rgbValue & 0x0000FF) / 255.0
+        
+        return Color(red: r, green: g, blue: b)
+    }
+}
+
+// 💡 用於完全清除 Sheet 後方純白背景的乾淨擴充
+fileprivate extension View {
+    func viewBackgroundClearModifier() -> some View {
+        if #available(iOS 16.4, *) {
+            return self.presentationBackground(.clear)
+        } else {
+            return self.background(ClearBackgroundView())
+        }
+    }
+}
+
+fileprivate struct ClearBackgroundView: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        DispatchQueue.main.async {
+            view.superview?.superview?.backgroundColor = .clear
+        }
+        return view
+    }
+    func updateUIView(_ uiView: UIView, context: Context) {}
 }
