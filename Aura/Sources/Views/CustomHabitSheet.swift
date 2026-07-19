@@ -12,14 +12,7 @@ struct CustomHabitSheet: View {
     @State private var selectedIcon = "bolt.shield"
     
     let neonColors = ["#00F2FE", "#F355DA", "#FF5E62", "#1ADF66", "#FFD200"]
-    // 從編輯選單中同步過來的完整標誌資料庫
-    let icons = [
-        "bolt.shield", "sparkles", "brain.headlight", "heart.text.square", "moon.stars", "flame", "drop.fill", "sun.max",
-        "figure.mind.and.body", "figure.walk", "figure.run", "heart.fill", "pills", "bed.double.fill", "lungs.fill",
-        "book.closed", "doc.text", "laptopcomputer", "terminal", "pencil.and.outline", "graduationcap", "briefcase",
-        "cup.and.saucer", "fork.knife", "wineglass", "hourglass", "timer", "alarm", "bell", "calendar",
-        "leaf", "tree", "wind", "guitars", "music.note", "house", "infinity", "scope", "eye"
-    ]
+    let icons = ["bolt.shield", "sparkles", "brain.headlight", "heart.text.square", "moon.stars"]
 
     var body: some View {
         NavigationStack {
