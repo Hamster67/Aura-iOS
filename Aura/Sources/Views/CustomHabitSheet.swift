@@ -20,6 +20,7 @@ struct CustomHabitSheet: View {
     // 💡 乾淨的 6 碼 Hex 格式
     let neonColors = ["00F2FE", "F355DA", "FF5E62", "1ADF66", "FFD200"]
     
+    // 💡 已修正：第三個圖示更新為正確支援的 brain.headsparks
     let icons = [
         "bolt.shield", "sparkles", "brain.headsparks", "heart.text.square", "moon.stars", "flame", "drop.fill", "sun.max",
         "figure.mind.and.body", "figure.walk", "figure.run", "heart.fill", "pills", "bed.double.fill", "lungs.fill",
@@ -39,7 +40,7 @@ struct CustomHabitSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // 深色漸層背景 + 毛玻璃底層 (💡 改用安全色彩解析)
+                // 深色漸層背景 + 毛玻璃底層
                 LinearGradient(
                     colors: [Color.fromCustomHex("0B0D17").opacity(0.85), Color.fromCustomHex("16192B").opacity(0.85)],
                     startPoint: .top,
@@ -86,7 +87,7 @@ struct CustomHabitSheet: View {
                         )
                         .padding(.horizontal, 24)
                         
-                        // 2. 週期與提醒機制設定
+                        // 2. 週期與提醒機制設定 (💡 重構日期邏輯，解決不合理的選單選法)
                         VStack(alignment: .leading, spacing: 12) {
                             Text("提醒週期設定")
                                 .font(.system(size: 12, weight: .semibold)).tracking(1.2)
@@ -100,6 +101,7 @@ struct CustomHabitSheet: View {
                                 }
                                 .pickerStyle(.segmented)
                                 
+                                // 自訂年份：顯示幾年一次
                                 if selectedRecurrence == .customYears {
                                     HStack {
                                         Text("每隔幾年提醒：")
@@ -111,9 +113,34 @@ struct CustomHabitSheet: View {
                                     }
                                 }
                                 
-                                if selectedRecurrence != .daily {
+                                // 每月提醒：僅供選擇「幾號」，不干擾年份與月份
+                                if selectedRecurrence == .monthly {
+                                    HStack {
+                                        Text("每月固定提醒日：")
+                                            .font(.system(size: 14))
+                                            .foregroundStyle(.white.opacity(0.7))
+                                        Spacer()
+                                        Picker("日期", selection: Binding(
+                                            get: { Calendar.current.component(.day, from: targetDate) },
+                                            set: { newDay in
+                                                if let newDate = Calendar.current.date(bySetting: .day, value: newDay, of: targetDate) {
+                                                    targetDate = newDate
+                                                }
+                                            }
+                                        )) {
+                                            ForEach(1...31, id: \.self) { day in
+                                                Text("\(day) 號").tag(day)
+                                            }
+                                        }
+                                        .pickerStyle(.menu)
+                                        .tint(.white)
+                                    }
+                                }
+                                
+                                // 單次提醒或自訂年份：才顯示完整的「年月日」日期選擇器
+                                if selectedRecurrence == .once || selectedRecurrence == .customYears {
                                     DatePicker(
-                                        selectedRecurrence == .monthly ? "每月提醒日" : "目標指定日期",
+                                        "目標指定日期",
                                         selection: $targetDate,
                                         displayedComponents: .date
                                     )
@@ -128,7 +155,7 @@ struct CustomHabitSheet: View {
                         }
                         .padding(.horizontal, 24)
                         
-                        // 3. 霓虹色彩選取區 (💡 已全面改用 Color.fromCustomHex)
+                        // 3. 霓虹色彩選取區
                         VStack(alignment: .leading, spacing: 12) {
                             Text("任務顏色")
                                 .font(.system(size: 12, weight: .semibold)).tracking(1.2)
@@ -235,11 +262,11 @@ struct CustomHabitSheet: View {
             }
             .navigationBarHidden(true)
         }
-        .viewBackgroundClearModifier() // 🔥 改用自訂擴充來完美隱藏底層
+        .viewBackgroundClearModifier()
     }
 }
 
-// 💡 專屬的安全色彩擴充功能，避開專案原初始化器的格式干擾
+// 💡 專屬的安全色彩擴充功能
 fileprivate extension Color {
     static func fromCustomHex(_ hexStr: String) -> Color {
         var cleanHex = hexStr.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
