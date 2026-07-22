@@ -6,7 +6,6 @@ struct CustomHabitSheet: View {
     @Environment(\.dismiss) private var dismiss
     
     @State private var title = ""
-    // 💡 統一格式：預設值去掉 #，與 neonColors 保持一致
     @State private var selectedColorHex = "00F2FE" 
     @State private var selectedIcon = "bolt.shield"
     
@@ -17,10 +16,8 @@ struct CustomHabitSheet: View {
     @State private var searchText = ""
     let columns = [GridItem(.adaptive(minimum: 50))]
     
-    // 💡 乾淨的 6 碼 Hex 格式
     let neonColors = ["00F2FE", "F355DA", "FF5E62", "1ADF66", "FFD200"]
     
-    // 💡 已修正：第三個圖示更新為正確支援的 brain.headsparks
     let icons = [
         "bolt.shield", "sparkles", "brain.headsparks", "heart.text.square", "moon.stars", "flame", "drop.fill", "sun.max",
         "figure.mind.and.body", "figure.walk", "figure.run", "heart.fill", "pills", "bed.double.fill", "lungs.fill",
@@ -87,7 +84,7 @@ struct CustomHabitSheet: View {
                         )
                         .padding(.horizontal, 24)
                         
-                        // 2. 週期與提醒機制設定 (💡 重構日期邏輯，解決不合理的選單選法)
+                        // 2. 週期與提醒機制設定（安全判定邏輯）
                         VStack(alignment: .leading, spacing: 12) {
                             Text("提醒週期設定")
                                 .font(.system(size: 12, weight: .semibold)).tracking(1.2)
@@ -113,7 +110,7 @@ struct CustomHabitSheet: View {
                                     }
                                 }
                                 
-                                // 每月提醒：僅供選擇「幾號」，不干擾年份與月份
+                                // 每月提醒：僅供選擇「幾號」
                                 if selectedRecurrence == .monthly {
                                     HStack {
                                         Text("每月固定提醒日：")
@@ -137,8 +134,8 @@ struct CustomHabitSheet: View {
                                     }
                                 }
                                 
-                                // 單次提醒或自訂年份：才顯示完整的「年月日」日期選擇器
-                                if selectedRecurrence == .once || selectedRecurrence == .customYears {
+                                // 💡 排除 daily 與 monthly 以外的類型（例如 yearly, customYears 等），顯示完整日期選擇器
+                                if selectedRecurrence != .daily && selectedRecurrence != .monthly {
                                     DatePicker(
                                         "目標指定日期",
                                         selection: $targetDate,
@@ -266,7 +263,7 @@ struct CustomHabitSheet: View {
     }
 }
 
-// 💡 專屬的安全色彩擴充功能
+// 💡 色彩擴充
 fileprivate extension Color {
     static func fromCustomHex(_ hexStr: String) -> Color {
         var cleanHex = hexStr.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
@@ -289,7 +286,7 @@ fileprivate extension Color {
     }
 }
 
-// 💡 用於完全清除 Sheet 後方純白背景的乾淨擴充
+// 💡 背景清除擴充
 fileprivate extension View {
     func viewBackgroundClearModifier() -> some View {
         if #available(iOS 16.4, *) {
